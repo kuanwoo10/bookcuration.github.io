@@ -1,0 +1,9 @@
+[
+  { "title": "늦여름",               "categories": ["1"], "file": "poems/늦여름_심호택.txt" },
+  { "title": "매미 소리",            "categories": ["2"], "file": "poems/매미 소리_이동우.txt" },
+  { "title": "번데기 통조림",        "categories": ["3"], "file": "poems/번데기 통조림_김경후.txt" },
+  { "title": "실업자가 야구 보는 이야기", "categories": ["4"], "file": "poems/실업자가 야구 보는 이야기_정확한파일명.txt" },
+  { "title": "에스컬레이터",         "categories": ["5"], "file": "poems/에스컬레이터_황유원.txt" },
+  { "title": "지도-무덤 박물관에서",  "categories": ["6"], "file": "poems/지도-무덤 박물관에서_정확한파일명.txt" },
+  { "title": "콜로라마",             "categories": ["7"], "file": "poems/콜로라마_김민지.txt" }
+]
