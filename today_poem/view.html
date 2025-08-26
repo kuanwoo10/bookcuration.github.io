@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시 전시 | 텍스트 온 더 무브</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --accent:#0E5A72; --bg:#ffffff }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--ink); background:var(--bg) }
+  header{ padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px }
+  .title{ font-size:18px; font-weight:800 }
+  .sub{ font-size:13px; color:var(--muted) }
+  .btns{ display:flex; gap:8px; flex-wrap:wrap }
+  button{ border:1px solid var(--line); background:#f9fafb; color:#111827; padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer }
+  button:hover{ filter:brightness(1.03) }
+  main{ max-width:900px; margin:18px auto; padding:0 16px 24px; }
+  .meta{ margin:8px 0 10px; color:var(--muted); font-size:14px }
+  pre{ white-space:pre-wrap; line-height:1.8; font-size:18px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px; min-height:220px }
+  .notice{ color:#ef4444; font-size:14px }
+  .spinner{ font-size:14px; color:#6b7280; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="title">시 전시</div>
+      <div class="sub">카테고리의 작품을 자동으로 하나 보여드립니다.</div>
+    </div>
+    <div class="btns">
+      <button id="anotherBtn">다른 시 보기</button>
+      <button id="copyBtn">복사</button>
+      <button id="printBtn">인쇄</button>
+      <button id="closeBtn">창 닫기</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="meta" class="meta"></div>
+    <div id="loading" class="spinner" style="display:none">불러오는 중…</div>
+    <pre id="viewer">로딩 중…</pre>
+    <div id="error" class="notice"></div>
+  </main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const cat = params.get('c') || '';     // "1"~"7"
+const auto = params.get('auto') || ''; // "random" 등
+
+let POEMS = [];
+let current = null;
+
+function setLoading(on){
+  document.getElementById('loading').style.display = on ? '' : 'none';
+}
+
+async function fetchJSON(paths){
+  for(const p of paths){
+    try{
+      const r = await fetch(p, {cache:'no-store'});
+      if(r.ok) return await r.json();
+    }catch(_){}
+  }
+  throw new Error('index.json을 찾을 수 없습니다.');
+}
+
+async function fetchTextWithFallback(path){
+  // 현재 파일이 today_poem/ 하위이므로 p.file이 "poems/..."(루트 기준)일 경우 대비
+  const tries = [path, '../'+path, '/'+path];
+  for(const p of tries){
+    try{
+      const r = await fetch(p, {cache:'no-store'});
+      if(r.ok) return await r.text();
+    }catch(_){}
+  }
+  throw new Error(`시 파일을 불러오지 못했습니다: ${path}`);
+}
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+
+function renderMeta(p){
+  const meta = document.getElementById('meta');
+  const cats = (p.categories||[]).join(', ');
+  meta.textContent = `제목: ${p.title || '(제목 없음)'}  ·  카테고리: ${cats}`;
+}
+
+async function showOne(poem){
+  setLoading(true);
+  document.getElementById('error').textContent = '';
+  try{
+    const text = await fetchTextWithFallback(poem.file);
+    current = poem;
+    document.getElementById('viewer').textContent = text;
+    renderMeta(poem);
+    // 공유 가능한 해시 파라미터로 업데이트
+    const url = new URL(location.href);
+    url.searchParams.set('c', cat);
+    url.searchParams.set('f', poem.file);
+    history.replaceState(null,'',url);
+  }catch(e){
+    document.getElementById('error').textContent = e.message;
+  }finally{
+    setLoading(false);
+  }
+}
+
+async function init(){
+  try{
+    if(!cat) throw new Error('카테고리(c)가 지정되지 않았습니다.');
+    // today_poem/ 위치에서 우선 index.json 시도
+    POEMS = await fetchJSON(['index.json','./index.json','../today_poem/index.json']);
+    const filtered = POEMS.filter(p => (p.categories||[]).map(String).includes(String(cat)));
+    if(filtered.length===0) throw new Error(`#${cat} 카테고리에 작품이 없습니다.`);
+    // f 파라미터 지정 시 그걸 우선, 없으면 랜덤(또는 첫 편)
+    const f = params.get('f');
+    let target = f ? filtered.find(p=>p.file===f) : null;
+    if(!target) target = (auto==='random') ? pick(filtered) : filtered[0];
+    await showOne(target);
+
+    // 버튼
+    document.getElementById('anotherBtn').onclick = ()=> showOne(pick(filtered));
+    document.getElementById('copyBtn').onclick = async ()=>{
+      try{ await navigator.clipboard.writeText(document.getElementById('viewer').textContent); alert('복사했습니다.'); }
+      catch{ alert('복사 실패'); }
+    };
+    document.getElementById('printBtn').onclick = ()=>window.print();
+    document.getElementById('closeBtn').onclick = ()=>window.close();
+  }catch(e){
+    document.getElementById('viewer').textContent = '';
+    document.getElementById('error').textContent = e.message;
+  }
+}
+init();
+</script>
+</body>
+</html>
