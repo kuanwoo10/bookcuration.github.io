@@ -61,9 +61,61 @@
     const pre = document.getElementById('pre');
     const post = document.getElementById('post');
     const state = { name: null, awaitingName: true };
+	// === 추천 글귀 데이터 ===
+	const QUOTES = {
+	  '사랑': [
+		'오늘의 사랑은 어제의 마음을 닮고, 내일의 용기를 닮는다.',
+		'너의 이름을 부르면 밤하늘이 조금 밝아진다.',
+		'사랑은 “괜찮아”라는 말에 숨어 있는 긴 안도의 한숨이다.'
+	  ],
+	  '우정': [
+		'먼 길을 나란히 걸어주는 사람, 그가 친구다.',
+		'네가 웃을 때 더 크게 웃게 되는 것, 그게 우정이다.',
+		'우정은 조용한 안부처럼 오래 남는다.'
+	  ]
+	};
 
-    // 처음 질문
-    pushLine({role:"bot", html:"너 이름이 뭐야?  <span class='dim'>(그냥 이름만 입력하면 돼요)</span>"});
+	// === UI 상태(스냅샷으로 이전 대화 복귀) ===
+	const uiState = {
+	  mode: 'chat',           // 'chat' | 'reco'
+	  snapshot: null,         // { logHTML, placeholder, input }
+	  reco: null              // { category, quote }
+	};
+
+	function enterRecommendationMode(category){
+	  // 이전 화면 스냅샷 저장
+	  uiState.snapshot = {
+		logHTML: log.innerHTML,
+		placeholder: inp.placeholder,
+		input: inp.value
+	  };
+	  uiState.mode = 'reco';
+
+	  // 추천 문구 선택
+	  const list = QUOTES[category] || [ `${category}에 어울리는 글귀를 적어보세요.` ];
+	  const quote = list[Math.floor(Math.random() * list.length)];
+	  uiState.reco = { category, quote };
+
+	  // 화면 초기화 후 안내 + 프롬프트 채우기
+	  log.innerHTML = '';
+	  pushLine({ role:'bot', html: `<b>${esc(category)}</b> 카테고리로 이런 글귀를 추천해줄게요.` });
+	  pushLine({ role:'bot', html: `“${esc(quote)}”` });
+	  
+	  // 입력창은 빈 상태 유지, 안내만 바꿔줌
+	  inp.value = '';
+	  inp.placeholder = '이전 화면으로 돌아가려면 back 입력...';
+	}
+
+	function restoreFromRecommendation(){
+	  if(!uiState.snapshot) return;
+	  log.innerHTML     = uiState.snapshot.logHTML;
+	  inp.placeholder   = uiState.snapshot.placeholder;
+	  inp.value         = uiState.snapshot.input || '';
+	  uiState.mode      = 'chat';
+	  uiState.snapshot  = null;
+	  uiState.reco      = null;
+	  pushLine({ role:'bot', html: '이전 대화로 돌아왔어요.' });
+	}
 
     // ===== 유틸 =====
     function pushLine({role="bot", promptText=null, html=""}){
@@ -102,19 +154,46 @@
       });
     }
 
+	// 처음 질문
+    pushLine({role:"bot", html:"성함이 어떻게 되시나요?"});
+	
     // ===== 입력 처리 =====
     async function handleInputSubmit(){
       const text = inp.value.trim();
       if(!text) return;
       inp.value = "";
       pushLine({role:"user", html: esc(text)});
+		
+	  // (A) 추천 모드에서 'back' → 이전 대화 복귀
+	  if (uiState.mode === 'reco'){
+		if (text.toLowerCase() === 'back'){
+		  restoreFromRecommendation();
+		} else {
+		  pushLine({ role:'sys', html:'지금 화면에서는 <b>back</b>만 사용할 수 있어요.' });
+		}
+		return;
+	  }
 
-      // clear / help
+	  // (B) 카테고리 입력 모드 트리거: 사랑 / 우정
+	  if(/사랑|우정/i.test(text)){
+		const cat = text.trim();
+		enterRecommendationMode(cat);
+		return;
+	  }
+
+	  // (C) 추천 모드에서 일반 입력: 사용자가 추천 문구를 전송한 경우
+	  if(uiState.mode === 'reco'){
+		// 여기서는 전송만 하고 모드는 유지. 원하는 경우 자동으로 chat 복귀도 가능.
+		pushLine({ role:'bot', html: '좋아요! 이전 화면으로 돌아가려면 back을 입력해주세요.' });
+		return;
+	  }
+      
+	  // clear / help
       if(text.toLowerCase() === "clear"){
         log.innerHTML = "";
         pushLine({role:"bot", html:"화면을 지웠어요."});
         if(!state.name){
-          pushLine({role:"bot", html:"너 이름이 뭐야?"});
+          pushLine({role:"bot", html:"성함을 말씀해주세요."});
           inp.placeholder = "이름을 입력하세요";
           state.awaitingName = true;
         }
@@ -128,7 +207,7 @@
         state.name = name;
         state.awaitingName = false;
         inp.placeholder = "메시지를 입력하세요…";
-        pushLine({role:"bot", html:`반가워요, <span class="cyan">${esc(name)}</span>! ${esc(name)}님에게 맞는 글귀를 추천해 줄게요. <br>마음에 드는 카테고리가 있을까요?  <br> "{{"우정, 사랑.</br>`});
+        pushLine({role:"bot", html:`반가워요, <span class="cyan">${esc(name)}</span>! ${esc(name)}님에게 맞는 글귀를 추천해 줄게요. <br>마음에 드는 카테고리가 있을까요?<br> {우정, 사랑\}</br>`});
         return;
       }
 	  
