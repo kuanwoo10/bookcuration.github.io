@@ -55,7 +55,7 @@
           <label class="badge"><input type="radio" name="mode" value="AND" checked> 모두 포함(AND)</label>
           <label class="badge" style="margin-left:8px"><input type="radio" name="mode" value="OR"> 하나 이상 포함(OR)</label>
         </div>
-        <div class="hint">※ `poems/index.json`의 각 작품 <code>categories</code> 값이 "1","2",... 처럼 숫자 문자열이어야 합니다.</div>
+        <div class="hint">※ `today_poem/index.json`의 각 작품 <code>categories</code> 값이 "1","2",... 처럼 숫자 문자열이어야 합니다.</div>
         <div id="count" class="badge"></div>
         <div id="results" class="list"></div>
       </div>
@@ -99,7 +99,7 @@ async function loadIndex() {
     document.getElementById('count').textContent = `총 ${POEMS.length}편`;
     handleHashOpen();
   } catch (e) {
-    document.getElementById('viewer').textContent = 'poems/index.json을 불러오지 못했습니다. 경로/파일을 확인하세요.';
+    document.getElementById('viewer').textContent = 'today_poem/index.json을 불러오지 못했습니다. 경로/파일을 확인하세요.';
   }
 }
 
@@ -243,4 +243,5 @@ window.addEventListener('hashchange', handleHashOpen);
 </script>
 </body>
 </html>
+
 
