@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>텍스트 온 더 무브</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 색감 (시안 유사) */
+    --bg-1:#000000;         /* 보라 그라데이션 시작 */
+    --bg-2:#000000;         /* 보라 그라데이션 끝   */
+    --card:#ffffff;
+    --ink:#1f2937;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --tab:#f3f4f6;
+    --tab-active:#2563eb;   /* 활성 탭 바탕 */
+    --tab-active-txt:#ffffff;
+    --primary:#0E5A72;      /* 버튼 색 (원하면 초록 등으로 교체) */
+    --primary-hover:#106B86;
+    --radius:14px;
+    --shadow: 0 10px 30px rgba(0,0,0,.10);
+  }
+
+  *{ box-sizing:border-box; }
+  html, body { height:100%; }
+  body{
+    margin:0;
+    font-family:'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color:var(--ink);
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    display:flex; align-items:center; justify-content:center;
+    padding: 32px 16px;
+  }
+
+  /* 외곽 컨테이너 */
+  .shell{
+    width:100%;
+    max-width: 1100px;
+  }
+
+  /* 상단 타이틀(area는 카드 밖, 흰 글자) */
+  .hero{
+    text-align:center;
+    color:#fff;
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    font-size: clamp(12px,1.6vw,16px);
+    letter-spacing:.02em;
+    opacity:.95;
+    margin-bottom:6px;
+  }
+  .title{
+    font-weight:800;
+    font-size: clamp(36px,6vw,64px);
+    line-height:1.12;
+    margin:0;
+  }
+  .subtitle{
+    font-size: clamp(16px,2.6vw,24px);
+    opacity:.95;
+    margin:6px 0 0;
+  }
+
+  /* 본문 카드 */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+
+  /* 탭 (시안 느낌) */
+  .tabs{
+    display:flex; gap:6px;
+    background:var(--tab);
+    padding:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .tab{
+    padding:10px 14px;
+    border-radius: 10px;
+    font-weight:600;
+    color:#111827;
+    text-decoration:none;
+    background:#fff;
+  }
+  .tab[aria-current="page"]{
+    background:var(--tab-active);
+    color:var(--tab-active-txt);
+    box-shadow: inset 0 -2px 0 rgba(255,255,255,.2);
+  }
+
+  /* 카드 바디: 중앙 배치 */
+  .card-body{
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding: 36px 18px 42px;
+    gap: 24px;
+  }
+
+  .lead{
+    font-size: clamp(14px,2.2vw,18px);
+    color:var(--muted);
+    margin:0;
+  }
+
+  /* 버튼 묶음 */
+  .btn-row{
+    display:flex; gap:18px; flex-wrap:wrap; justify-content:center;
+  }
+  .btn{
+    appearance:none; border:0; cursor:pointer;
+    padding:14px 20px; min-width: 240px; height:56px;
+    border-radius:10px; font-weight:700; font-size:16px;
+    color:#fff; background:var(--primary);
+    box-shadow: 0 6px 20px rgba(0,0,0,.08);
+    transition: transform .08s ease, filter .15s ease, background .15s ease;
+  }
+  .btn:hover{ filter:brightness(1.06); background:var(--primary-hover); transform: translateY(-1px);}
+  .btn:active{ transform: translateY(0); }
+
+  /* 푸터(선택) */
+  .foot{
+    margin-top:14px;
+    text-align:center; color:#e5e7eb; font-size:13px;
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero" role="banner">
+      <div class="eyebrow">국립창원대학교 도서관 북큐레이션 참여이벤트 2</div>
+      <h1 class="title">텍스트 온 더 무브</h1>
+      <div class="subtitle">(Text on the Move)</div>
+    </header>
+
+    <section class="card" aria-label="메인 선택">
+      <div class="card-body">
+        <p class="lead"></p>
+        <div class="btn-row">
+          <a class="btn" href="./with_code/with_code.html" aria-label="참여1 코드로 소통하기로 이동">코드로 소통하기</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">Changwon National University Library</div>
+  </div>
+</body>
+</html>
