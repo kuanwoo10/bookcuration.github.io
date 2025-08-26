@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>카테고리로 시 찾기</title>
+<style>
+  :root{--bg:#0b1020;--card:#141a2e;--ink:#e7ecff;--muted:#9fb0ff}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Apple SD Gothic Neo,Pretendard,Arial}
+  .wrap{max-width:960px;margin:auto;padding:20px}
+  h1{margin:0 0 10px}
+  .card{background:var(--card);border:1px solid #1f2744;border-radius:16px;padding:16px;margin-top:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input[type="text"]{flex:1;min-width:220px;background:#0f1530;color:var(--ink);border:1px solid #27335a;border-radius:10px;padding:10px}
+  button{background:#2a59ff;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  button.ghost{background:#253156}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .list{margin-top:10px;display:grid;grid-template-columns:1fr;gap:8px}
+  .item{padding:10px;border:1px solid #243055;border-radius:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .title{font-weight:700}
+  .cats{font-size:12px;color:#c9d6ff}
+  pre{white-space:pre-wrap;line-height:1.6;background:#0f1530;border:1px solid #27335a;border-radius:12px;padding:14px;min-height:120px}
+  .badge{font-size:12px;color:#cfe0ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>카테고리로 시 찾기</h1>
+  <div class="card">
+    <div class="row">
+      <input id="q" type="text" placeholder="카테고리를 입력하세요 (예: 사랑, 봄, 바다)">
+      <button id="searchBtn">검색</button>
+      <button id="randomBtn" class="ghost">랜덤</button>
+    </div>
+    <div class="hint">쉼표(,)로 여러 카테고리를 입력하면 **모두 포함**하는 작품만 보여줍니다. (공백 무시)</div>
+    <div id="count" class="badge" style="margin-top:8px"></div>
+    <div id="results" class="list"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div><strong id="currentTitle">작품 미선택</strong></div>
+      <div id="currentCats" class="badge"></div>
+    </div>
+    <pre id="viewer">여기에 작품 내용이 나타납니다.</pre>
+  </div>
+</div>
+
+<script>
+let POEMS = [];
+
+async function loadIndex() {
+  try {
+    const res = await fetch('poems/index.json', {cache:'no-store'});
+    POEMS = await res.json();
+  } catch(e) {
+    document.getElementById('viewer').textContent = 'index.json을 불러오지 못했습니다. 폴더/경로를 확인하세요.';
+  }
+}
+
+function norm(s){ return s.normalize('NFC').toLowerCase().trim(); }
+
+function filterByCategories(query) {
+  const tokens = query.split(',').map(t => norm(t)).filter(Boolean);
+  if (tokens.length === 0) return POEMS.slice();
+  return POEMS.filter(p => {
+    const cats = (p.categories||[]).map(norm);
+    // 모든 토큰이 포함되어야 통과(AND)
+    return tokens.every(t => cats.some(c => c.includes(t)));
+  });
+}
+
+function renderList(items){
+  const list = document.getElementById('results');
+  list.innerHTML = '';
+  items.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    const left = document.createElement('div');
+    const t = document.createElement('div');
+    t.className = 'title';
+    t.textContent = p.title;
+    const c = document.createElement('div');
+    c.className = 'cats';
+    c.textContent = (p.categories||[]).join(', ');
+    left.appendChild(t); left.appendChild(c);
+
+    const btn = document.createElement('button');
+    btn.textContent = '보기';
+    btn.onclick = () => loadPoem(p);
+
+    el.appendChild(left); el.appendChild(btn);
+    list.appendChild(el);
+  });
+  document.getElementById('count').textContent = `검색 결과: ${items.length}편`;
+}
+
+async function loadPoem(p) {
+  try {
+    const res = await fetch(p.file, {cache:'no-store'});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    document.getElementById('viewer').textContent = text;
+    document.getElementById('currentTitle').textContent = p.title;
+    document.getElementById('currentCats').textContent = (p.categories||[]).join(', ');
+    // URL 해시로 깊은 링크 제공
+    location.hash = encodeURIComponent(p.file);
+  } catch(e) {
+    document.getElementById('viewer').textContent = `작품을 불러오지 못했습니다: ${e.message}\n(${p.file})`;
+  }
+}
+
+function handleHashOpen(){
+  const h = decodeURIComponent(location.hash.replace(/^#/,''));
+  if(!h) return;
+  const found = POEMS.find(p => p.file === h);
+  if(found) loadPoem(found);
+}
+
+document.getElementById('searchBtn').addEventListener('click', () => {
+  const q = document.getElementById('q').value;
+  renderList(filterByCategories(q));
+});
+
+document.getElementById('randomBtn').addEventListener('click', () => {
+  const q = document.getElementById('q').value;
+  const items = filterByCategories(q);
+  if(items.length === 0){ alert('해당 카테고리 결과가 없습니다.'); return; }
+  const pick = items[Math.floor(Math.random()*items.length)];
+  loadPoem(pick);
+});
+
+// Enter 키로 검색
+document.getElementById('q').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('searchBtn').click();
+});
+
+(async function init(){
+  await loadIndex();
+  renderList(POEMS);
+  handleHashOpen();
+  window.addEventListener('hashchange', handleHashOpen);
+})();
+</script>
+</body>
+</html>
