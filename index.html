@@ -2,145 +2,244 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>카테고리로 시 찾기</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>텍스트 온더 무브 | 숫자 카테고리 시 보기</title>
 <style>
-  :root{--bg:#0b1020;--card:#141a2e;--ink:#e7ecff;--muted:#9fb0ff}
+  :root{--bg:#0b1020;--card:#141a2e;--ink:#e7ecff;--muted:#9fb0ff;--line:#1f2744}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Apple SD Gothic Neo,Pretendard,Arial}
-  .wrap{max-width:960px;margin:auto;padding:20px}
-  h1{margin:0 0 10px}
-  .card{background:var(--card);border:1px solid #1f2744;border-radius:16px;padding:16px;margin-top:12px}
+  .wrap{display:grid;grid-template-rows:auto 1fr auto;min-height:100%}
+  header{padding:16px 20px;border-bottom:1px solid var(--line)}
+  header h2{margin:0;font-size:13px;color:var(--muted);font-weight:700}
+  header h1{margin:6px 0 0;font-size:24px;font-weight:900;letter-spacing:.2px}
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
+  @media (max-width:960px){.main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+  .card h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);color:#cfe0ff;font-size:14px}
+  .pane{padding:12px;display:flex;flex-direction:column;gap:10px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  input[type="text"]{flex:1;min-width:220px;background:#0f1530;color:var(--ink);border:1px solid #27335a;border-radius:10px;padding:10px}
-  button{background:#2a59ff;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
-  button.ghost{background:#253156}
-  .hint{color:var(--muted);font-size:12px;margin-top:6px}
-  .list{margin-top:10px;display:grid;grid-template-columns:1fr;gap:8px}
+  input[type="text"]{flex:1;min-width:200px;background:#0f1530;color:var(--ink);border:1px solid #27335a;border-radius:10px;padding:10px}
+  button{background:#2a59ff;border:none;color:#fff;padding:9px 12px;border-radius:10px;font-weight:800;cursor:pointer}
+  button.ghost{background:#253156;color:#cfe0ff}
+  button.warn{background:#a33a3a}
+  .hint{color:var(--muted);font-size:12px}
+  .list{display:grid;grid-template-columns:1fr;gap:8px}
   .item{padding:10px;border:1px solid #243055;border-radius:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
-  .title{font-weight:700}
+  .title{font-weight:800}
   .cats{font-size:12px;color:#c9d6ff}
-  pre{white-space:pre-wrap;line-height:1.6;background:#0f1530;border:1px solid #27335a;border-radius:12px;padding:14px;min-height:120px}
   .badge{font-size:12px;color:#cfe0ff}
+  pre{white-space:pre-wrap;line-height:1.7;background:#0f1530;border:1px solid #27335a;border-radius:12px;padding:14px;min-height:160px}
+  footer{padding:10px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  .chip{display:inline-block;background:#1e2a4a;color:#cfe0ff;border:1px solid #2a3b6a;padding:2px 8px;border-radius:999px;margin-left:6px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>카테고리로 시 찾기</h1>
-  <div class="card">
-    <div class="row">
-      <input id="q" type="text" placeholder="카테고리를 입력하세요 (예: 사랑, 봄, 바다)">
-      <button id="searchBtn">검색</button>
-      <button id="randomBtn" class="ghost">랜덤</button>
-    </div>
-    <div class="hint">쉼표(,)로 여러 카테고리를 입력하면 **모두 포함**하는 작품만 보여줍니다. (공백 무시)</div>
-    <div id="count" class="badge" style="margin-top:8px"></div>
-    <div id="results" class="list"></div>
+  <header>
+    <h2>국립창원대학교 도서관 <span class="chip">북큐레이션 참여이벤트 2</span></h2>
+    <h1>텍스트 온더 무브 (Text on the Move)</h1>
+  </header>
+
+  <div class="main">
+    <!-- 좌측: 검색/목록 -->
+    <section class="card">
+      <h3>숫자 카테고리로 찾기</h3>
+      <div class="pane">
+        <div class="row">
+          <input id="q" type="text" placeholder="예: 1, 3  (쉼표로 여러 개 입력 가능)">
+          <button id="searchBtn">검색</button>
+          <button id="randomBtn" class="ghost">랜덤</button>
+          <button id="allBtn" class="ghost">전체보기</button>
+          <button id="clearBtn" class="warn">초기화</button>
+        </div>
+        <div class="row">
+          <label class="badge"><input type="radio" name="mode" value="AND" checked> 모두 포함(AND)</label>
+          <label class="badge" style="margin-left:8px"><input type="radio" name="mode" value="OR"> 하나 이상 포함(OR)</label>
+        </div>
+        <div class="hint">※ `poems/index.json`의 각 작품 <code>categories</code> 값이 "1","2",... 처럼 숫자 문자열이어야 합니다.</div>
+        <div id="count" class="badge"></div>
+        <div id="results" class="list"></div>
+      </div>
+    </section>
+
+    <!-- 우측: 뷰어 -->
+    <section class="card">
+      <h3>작품 보기</h3>
+      <div class="pane">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div id="currentTitle" class="title">작품 미선택</div>
+            <div id="currentCats" class="cats"></div>
+          </div>
+          <div class="row">
+            <button id="prevBtn" class="ghost">이전</button>
+            <button id="nextBtn" class="ghost">다음</button>
+            <button id="copyLinkBtn" class="ghost">링크복사</button>
+          </div>
+        </div>
+        <pre id="viewer">왼쪽에서 작품을 선택하거나 [랜덤]을 눌러 보세요.</pre>
+      </div>
+    </section>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <div><strong id="currentTitle">작품 미선택</strong></div>
-      <div id="currentCats" class="badge"></div>
-    </div>
-    <pre id="viewer">여기에 작품 내용이 나타납니다.</pre>
-  </div>
+  <footer>
+    정적 호스팅(GitHub Pages/Netlify/Vercel)에서 동작합니다 · 파일 경로/대소문자/공백을 정확히 맞추세요.
+  </footer>
 </div>
 
 <script>
 let POEMS = [];
+let LAST = [];          // 마지막 검색 결과
+let currentIndex = -1;  // LAST 내 현재 포인터
 
 async function loadIndex() {
   try {
     const res = await fetch('poems/index.json', {cache:'no-store'});
     POEMS = await res.json();
-  } catch(e) {
-    document.getElementById('viewer').textContent = 'index.json을 불러오지 못했습니다. 폴더/경로를 확인하세요.';
+    renderList(POEMS);
+    document.getElementById('count').textContent = `총 ${POEMS.length}편`;
+    handleHashOpen();
+  } catch (e) {
+    document.getElementById('viewer').textContent = 'poems/index.json을 불러오지 못했습니다. 경로/파일을 확인하세요.';
   }
 }
 
-function norm(s){ return s.normalize('NFC').toLowerCase().trim(); }
+function tokensFromInput() {
+  const raw = document.getElementById('q').value;
+  return raw.split(',').map(s => s.trim()).filter(Boolean);
+}
 
-function filterByCategories(query) {
-  const tokens = query.split(',').map(t => norm(t)).filter(Boolean);
-  if (tokens.length === 0) return POEMS.slice();
-  return POEMS.filter(p => {
-    const cats = (p.categories||[]).map(norm);
-    // 모든 토큰이 포함되어야 통과(AND)
-    return tokens.every(t => cats.some(c => c.includes(t)));
-  });
+function modeValue() {
+  return [...document.querySelectorAll('input[name="mode"]')].find(r => r.checked).value;
+}
+
+function filterByCategories(queryTokens, mode) {
+  if (queryTokens.length === 0) return POEMS.slice();
+  if (mode === 'AND') {
+    return POEMS.filter(p => {
+      const cats = (p.categories||[]).map(String);
+      return queryTokens.every(t => cats.includes(String(t)));
+    });
+  } else { // OR
+    return POEMS.filter(p => {
+      const cats = (p.categories||[]).map(String);
+      return queryTokens.some(t => cats.includes(String(t)));
+    });
+  }
 }
 
 function renderList(items){
   const list = document.getElementById('results');
   list.innerHTML = '';
-  items.forEach(p => {
+  LAST = items.slice();
+  currentIndex = -1;
+  document.getElementById('count').textContent = `검색 결과: ${items.length}편`;
+  items.forEach((p, idx) => {
     const el = document.createElement('div');
     el.className = 'item';
     const left = document.createElement('div');
-    const t = document.createElement('div');
-    t.className = 'title';
-    t.textContent = p.title;
-    const c = document.createElement('div');
-    c.className = 'cats';
-    c.textContent = (p.categories||[]).join(', ');
+    const t = document.createElement('div'); t.className = 'title'; t.textContent = p.title || '(제목 없음)';
+    const c = document.createElement('div'); c.className = 'cats';  c.textContent = (p.categories||[]).join(', ');
     left.appendChild(t); left.appendChild(c);
-
-    const btn = document.createElement('button');
-    btn.textContent = '보기';
-    btn.onclick = () => loadPoem(p);
-
+    const btn = document.createElement('button'); btn.textContent = '보기';
+    btn.onclick = () => { currentIndex = idx; loadPoem(p,true); };
     el.appendChild(left); el.appendChild(btn);
     list.appendChild(el);
   });
-  document.getElementById('count').textContent = `검색 결과: ${items.length}편`;
 }
 
-async function loadPoem(p) {
-  try {
+async function loadPoem(p, updateHash){
+  try{
     const res = await fetch(p.file, {cache:'no-store'});
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     document.getElementById('viewer').textContent = text;
-    document.getElementById('currentTitle').textContent = p.title;
+    document.getElementById('currentTitle').textContent = p.title || '(제목 없음)';
     document.getElementById('currentCats').textContent = (p.categories||[]).join(', ');
-    // URL 해시로 깊은 링크 제공
-    location.hash = encodeURIComponent(p.file);
-  } catch(e) {
+    if(updateHash){
+      const q = document.getElementById('q').value.trim();
+      const m = modeValue();
+      const url = new URL(location.href);
+      url.hash = `f=${encodeURIComponent(p.file)}&q=${encodeURIComponent(q)}&m=${m}`;
+      history.replaceState(null,'',url);
+    }
+  }catch(e){
     document.getElementById('viewer').textContent = `작품을 불러오지 못했습니다: ${e.message}\n(${p.file})`;
   }
 }
 
-function handleHashOpen(){
-  const h = decodeURIComponent(location.hash.replace(/^#/,''));
-  if(!h) return;
-  const found = POEMS.find(p => p.file === h);
-  if(found) loadPoem(found);
+function parseHash(){
+  const h = location.hash.replace(/^#/,'');
+  const obj = {};
+  h.split('&').forEach(pair=>{
+    const [k,v] = pair.split('=');
+    if(k) obj[k]=decodeURIComponent(v||'');
+  });
+  return obj;
 }
 
-document.getElementById('searchBtn').addEventListener('click', () => {
-  const q = document.getElementById('q').value;
-  renderList(filterByCategories(q));
-});
+function handleHashOpen(){
+  const h = parseHash();
+  if(h.q){ document.getElementById('q').value = h.q; }
+  if(h.m){
+    const r = document.querySelector(`input[name="mode"][value="${h.m}"]`);
+    if(r) r.checked = true;
+  }
+  const toks = tokensFromInput();
+  renderList(filterByCategories(toks, modeValue()));
+  if(h.f){
+    const idx = LAST.findIndex(p => p.file === h.f);
+    if(idx >= 0){ currentIndex = idx; loadPoem(LAST[idx], false); }
+  }
+}
 
-document.getElementById('randomBtn').addEventListener('click', () => {
-  const q = document.getElementById('q').value;
-  const items = filterByCategories(q);
-  if(items.length === 0){ alert('해당 카테고리 결과가 없습니다.'); return; }
+/* === 이벤트 바인딩 === */
+document.getElementById('searchBtn').addEventListener('click', ()=>{
+  renderList(filterByCategories(tokensFromInput(), modeValue()));
+});
+document.getElementById('allBtn').addEventListener('click', ()=>{
+  document.getElementById('q').value = '';
+  renderList(POEMS);
+});
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  document.getElementById('q').value = '';
+  document.querySelector('input[name="mode"][value="AND"]').checked = true;
+  renderList(POEMS);
+  document.getElementById('viewer').textContent = '왼쪽에서 작품을 선택하거나 [랜덤]을 눌러 보세요.';
+  document.getElementById('currentTitle').textContent = '작품 미선택';
+  document.getElementById('currentCats').textContent = '';
+  history.replaceState(null,'',location.pathname);
+});
+document.getElementById('randomBtn').addEventListener('click', ()=>{
+  const items = filterByCategories(tokensFromInput(), modeValue());
+  if(items.length === 0) return alert('해당 카테고리 결과가 없습니다.');
   const pick = items[Math.floor(Math.random()*items.length)];
-  loadPoem(pick);
+  currentIndex = items.indexOf(pick);
+  LAST = items;
+  loadPoem(pick, true);
 });
-
-// Enter 키로 검색
 document.getElementById('q').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') document.getElementById('searchBtn').click();
 });
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  if(LAST.length === 0) return;
+  currentIndex = (currentIndex<=0)? LAST.length-1 : currentIndex-1;
+  loadPoem(LAST[currentIndex], true);
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  if(LAST.length === 0) return;
+  currentIndex = (currentIndex>=LAST.length-1)? 0 : currentIndex+1;
+  loadPoem(LAST[currentIndex], true);
+});
+document.getElementById('copyLinkBtn').addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(location.href);
+    alert('현재 작품 링크를 클립보드에 복사했습니다.');
+  }catch{ alert('링크 복사에 실패했습니다.'); }
+});
 
-(async function init(){
-  await loadIndex();
-  renderList(POEMS);
-  handleHashOpen();
-  window.addEventListener('hashchange', handleHashOpen);
-})();
+/* 시작 */
+loadIndex();
+window.addEventListener('hashchange', handleHashOpen);
 </script>
 </body>
 </html>
