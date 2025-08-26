@@ -93,7 +93,7 @@ let currentIndex = -1;  // LAST 내 현재 포인터
 
 async function loadIndex() {
   try {
-    const res = await fetch('poems/index.json', {cache:'no-store'});
+    const res = await fetch('today_poem/index.json', {cache:'no-store'});
     POEMS = await res.json();
     renderList(POEMS);
     document.getElementById('count').textContent = `총 ${POEMS.length}편`;
@@ -243,3 +243,4 @@ window.addEventListener('hashchange', handleHashOpen);
 </script>
 </body>
 </html>
+
