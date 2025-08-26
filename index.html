@@ -1,110 +1,90 @@
-<!-- === Terminal Chat === -->
-<div id="terminal-chat" class="term">
-  <div id="term-out" class="out" aria-live="polite"></div>
-  <form id="term-form" class="form" autocomplete="off">
-    <span id="ps1" class="ps1">guest@local:~$</span>
-    <input id="term-input" class="in" type="text" placeholder="여기에 입력" />
-  </form>
-</div>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>텍스트 온 더 무브</title>
+
+<!-- (성능) Google Fonts 사전연결 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+
+<!-- (메타) -->
+<meta name="description" content="국립창원대학교 도서관 북큐레이션 참여이벤트 - 텍스트 온 더 무브" />
+<meta name="theme-color" content="#0E5A72" />
 
 <style>
-.term{background:#0b1221;border:1px solid #1b2540;border-radius:12px;color:#e5edff;font-family:ui-monospace,Consolas,monospace}
-.term .out{padding:14px 14px 6px; max-height:50vh; overflow:auto; line-height:1.7}
-.term .form{display:flex; gap:8px; align-items:center; padding:10px 14px; border-top:1px solid #1b2540}
-.term .ps1{color:#83a1ff}
-.term .in{flex:1; background:#0e1730; color:#e5edff; border:1px solid #24335e; border-radius:8px; padding:8px 10px}
-.term .sys{color:#9fb4ff}
-.term .usr{color:#c9f6dd}
-.term .hl {color:#ffdf6b}
-.term a.link{color:#7aa7ff; text-decoration:underline}
+  :root{
+    --bg-1:#000000; --bg-2:#000000;
+    --card:#ffffff; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+    --primary:#0E5A72; --primary-hover:#106B86;
+    --radius:14px; --shadow: 0 10px 30px rgba(0,0,0,.10);
+  }
+  *{ box-sizing:border-box; }
+  html, body { height:100%; }
+  body{
+    margin:0;
+    font-family:'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color:var(--ink);
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    display:flex; align-items:center; justify-content:center;
+    padding: 32px 16px;
+  }
+  .shell{ width:100%; max-width: 1100px; }
+
+  /* 헤더 */
+  .hero{ text-align:center; color:#fff; margin-bottom:18px; }
+  .eyebrow{ font-size: clamp(12px,1.6vw,16px); letter-spacing:.02em; opacity:.95; margin-bottom:6px; }
+  .title{ font-weight:800; font-size: clamp(36px,6vw,64px); line-height:1.12; margin:0; }
+  .subtitle{ font-size: clamp(16px,2.6vw,24px); opacity:.95; margin:6px 0 0; }
+
+  /* 카드 */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .card-body{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding: 36px 18px 42px; gap: 24px;
+  }
+  .btn-row{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
+  .btn{
+    appearance:none; border:0; cursor:pointer;
+    padding:14px 20px; min-width: 240px; height:56px;
+    border-radius:10px; font-weight:700; font-size:16px;
+    color:#fff; background:var(--primary);
+    box-shadow: 0 6px 20px rgba(0,0,0,.08);
+    transition: transform .08s ease, filter .15s ease, background .15s ease;
+  }
+  .btn:hover{ filter:brightness(1.06); background:var(--primary-hover); transform: translateY(-1px); }
+  .btn:active{ transform: translateY(0); }
+  .btn:focus-visible{ outline:3px solid #93c5fd; outline-offset:2px; }
+
+  .foot{ margin-top:14px; text-align:center; color:#e5e7eb; font-size:13px; }
 </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero" role="banner">
+      <div class="eyebrow">국립창원대학교 도서관 북큐레이션 참여이벤트 2</div>
+      <h1 class="title">텍스트 온 더 무브</h1>
+      <div class="subtitle">(Text on the Move)</div>
+    </header>
 
-<script>
-(() => {
-  // 새 창으로 열 시 전시 페이지 (경로 체크!)
-  const VIEW_URL = '../today_poem/view.html';  // 예: with_code.html 기준
+    <!-- 메인: 버튼 1개만 유지 (카테고리/시 선택 UI 전부 제거) -->
+    <section class="card" aria-label="메인 이동">
+      <div class="card-body">
+        <div class="btn-row">
+          <a class="btn" href="./with_code/with_code.html" aria-label="코드로 소통하기로 이동">코드로 소통하기</a>
+        </div>
+      </div>
+    </section>
 
-  // --- elements ---
-  const out = document.getElementById('term-out');
-  const form = document.getElementById('term-form');
-  const input = document.getElementById('term-input');
-  const ps1 = document.getElementById('ps1');
-
-  // --- small helpers ---
-  const scrollEnd = () => { out.scrollTop = out.scrollHeight; };
-  function pushLine(prefix, text, cls='sys'){
-    const div = document.createElement('div');
-    div.innerHTML = `<span class="${cls==='usr'?'usr':'sys'}">${prefix}</span> ${text}`;
-    out.appendChild(div); scrollEnd();
-  }
-  function bot(text){ pushLine('term@host:~#', text, 'sys'); }
-  function me(text){ pushLine(userPrompt(), text, 'usr'); }
-
-  // --- state machine ---
-  let state = 'askName';
-  let name = '';
-  const cats = [1,2,3,4,5,6,7];
-
-  function userPrompt(){
-    return `${name || 'guest'}@local:~$`;
-  }
-  function setPrompt(){
-    ps1.textContent = userPrompt();
-  }
-
-  function start(){
-    bot('너 이름이 뭐야?  (그냥 이름만 입력하면 돼요)');
-    setPrompt();
-    input.focus();
-  }
-
-  function showCats(){
-    const listStr = `[${cats.join(', ')}]`;
-    bot(`반가워요, <span class="hl">${name}</span>! ${name}님에게 맞는 글귀를 추천해 줄게요.<br>마음에 드는 카테고리가 있을까요?<br><span class="hl">${listStr}</span> 중 하나를 숫자로 입력해 주세요.`);
-  }
-
-  function handleName(val){
-    name = val.trim();
-    if(!name){ bot('이름을 입력해 주세요.'); return; }
-    me(name);
-    setPrompt();
-    state = 'askCat';
-    showCats();
-  }
-
-  function openViewer(cat){
-    const url = `${VIEW_URL}?c=${encodeURIComponent(cat)}&auto=random&n=${encodeURIComponent(name)}`;
-    // 새 창 시도
-    const w = window.open(url, '_blank', 'noopener');
-    if(!w){
-      bot(`팝업이 차단된 것 같아요. 아래 링크를 눌러 열어주세요.<br><a class="link" target="_blank" rel="noopener" href="${url}">새 창으로 열기</a>`);
-    }
-  }
-
-  function handleCat(val){
-    const v = val.trim();
-    if(!/^[1-7]$/.test(v)){
-      me(v);
-      bot('1부터 7 사이의 숫자만 입력해 주세요. 예) 1');
-      return;
-    }
-    me(v);
-    bot(`<span class="hl">${v}</span>을(를) 선택하셨네요. <span class="hl">${v}</span>에 맞는 글귀를 추천해드릴게요!`);
-    openViewer(v);
-    // 다음 선택을 이어갈 수 있게 상태 유지
-    showCats();
-  }
-
-  // submit
-  form.addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const val = input.value;
-    input.value = '';
-    if(state === 'askName') handleName(val);
-    else handleCat(val);
-  });
-
-  // 시작
-  start();
-})();
-</script>
+    <div class="foot">Changwon National University Library</div>
+  </div>
+</body>
+</html>
