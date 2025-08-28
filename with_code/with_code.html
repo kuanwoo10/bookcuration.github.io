@@ -21,8 +21,6 @@
     .bar{display:flex; align-items:center; gap:8px; background:#0b1224; border:1px solid var(--border); border-radius:10px; padding:8px 10px;}
     .ps1{color:var(--green); user-select:none}
     input[type="text"]{flex:1; background:transparent; border:0; outline:none; color:var(--ink); font:inherit; padding:4px 2px;}
-    .hint{display:flex; gap:10px; margin-top:8px; color:var(--dim); font-size:12px}
-    .chip{border:1px solid var(--border); padding:4px 8px; border-radius:999px; cursor:pointer}
     @media (max-width: 640px){ .ps1.printwrap{display:none} }
   </style>
 </head>
@@ -40,16 +38,9 @@
 
     <div class="footer">
       <div class="bar">
-        <!-- 입력창은 항상 >> print(' ... ') 래핑 유지 -->
         <span class="ps1 printwrap" id="pre">&gt;&gt; print('</span>
         <input id="inp" type="text" autocomplete="off" placeholder="이름을 입력하세요" />
         <span class="ps1 printwrap" id="post">')</span>
-      </div>
-      <div class="hint">
-        <span class="chip" data-fill="민수">민수</span>
-        <span class="chip" data-fill="안녕?">안녕?</span>
-        <span class="chip" data-fill="clear">clear</span>
-        <span class="chip" data-fill="help">help</span>
       </div>
     </div>
   </div>
@@ -58,71 +49,124 @@
     // ===== 상태 =====
     const log = document.getElementById('log');
     const inp = document.getElementById('inp');
-    const pre = document.getElementById('pre');
-    const post = document.getElementById('post');
     const state = { name: null, awaitingName: true };
-	// === 추천 글귀 데이터 ===
-	const QUOTES = {
-	  '사랑': [
-		'오늘의 사랑은 어제의 마음을 닮고, 내일의 용기를 닮는다.',
-		'너의 이름을 부르면 밤하늘이 조금 밝아진다.',
-		'사랑은 “괜찮아”라는 말에 숨어 있는 긴 안도의 한숨이다.'
-	  ],
-	  '우정': [
-		'먼 길을 나란히 걸어주는 사람, 그가 친구다.',
-		'네가 웃을 때 더 크게 웃게 되는 것, 그게 우정이다.',
-		'우정은 조용한 안부처럼 오래 남는다.'
-	  ]
-	};
 
-	// === UI 상태(스냅샷으로 이전 대화 복귀) ===
-	const uiState = {
-	  mode: 'chat',           // 'chat' | 'reco'
-	  snapshot: null,         // { logHTML, placeholder, input }
-	  reco: null              // { category, quote }
-	};
+    // ===== 레포에서 불러올 글귀(동적) =====
+    // 현재 저장소 구조: 카테고리/카테고리명/글귀.txt
+    // GitHub API로 디렉터리/파일을 읽고, 해당 카테고리 폴더의 .txt 중 랜덤 하나를 fetch
+    const GH = {
+      owner: 'kuanwoo10',
+      repo: 'bookcuration.github.io',
+      branch: 'main',
+      baseDir: '카테고리'
+    };
 
-	function enterRecommendationMode(category){
-	  // 이전 화면 스냅샷 저장
-	  uiState.snapshot = {
-		logHTML: log.innerHTML,
-		placeholder: inp.placeholder,
-		input: inp.value
-	  };
-	  uiState.mode = 'reco';
+    let CATS = []; // 폴더명 목록 (카테고리)
 
-	  // 추천 문구 선택
-	  const list = QUOTES[category] || [ `${category}에 어울리는 글귀를 적어보세요.` ];
-	  const quote = list[Math.floor(Math.random() * list.length)];
-	  uiState.reco = { category, quote };
+    function encPath(path){
+      // 경로 세그먼트별 인코딩 (한글/공백 안전)
+      return path.split('/').map(encodeURIComponent).join('/');
+    }
+    function ghListURL(path){
+      const p = encPath(path);
+      return `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${p}?ref=${GH.branch}`;
+    }
 
-	  // 화면 초기화 후 안내 + 프롬프트 채우기
-	  log.innerHTML = '';
-	  pushLine({ role:'bot', html: `<b>${esc(category)}</b> 카테고리로 이런 글귀를 추천해줄게요.` });
-	  pushLine({ role:'bot', html: `“${esc(quote)}”` });
-	  
-	  // 입력창은 빈 상태 유지, 안내만 바꿔줌
-	  inp.value = '';
-	  inp.placeholder = '이전 화면으로 돌아가려면 back 입력...';
-	}
+    async function listDir(path){
+      const url = ghListURL(path);
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/vnd.github+json' },
+        cache: 'no-store'
+      });
+      if(!res.ok) throw new Error(`GitHub API ${res.status}`);
+      return await res.json(); // [{name,type,path,download_url,...}, ...]
+    }
 
-	function restoreFromRecommendation(){
-	  if(!uiState.snapshot) return;
-	  log.innerHTML     = uiState.snapshot.logHTML;
-	  inp.placeholder   = uiState.snapshot.placeholder;
-	  inp.value         = uiState.snapshot.input || '';
-	  uiState.mode      = 'chat';
-	  uiState.snapshot  = null;
-	  uiState.reco      = null;
-	  pushLine({ role:'bot', html: '이전 대화로 돌아왔어요.' });
-	}
+    async function loadCategories(){
+      try{
+        const items = await listDir(GH.baseDir);
+        const dirs = items.filter(x => x.type === 'dir');
+        CATS = dirs.map(x => x.name);
+      }catch(err){
+        pushLine({ role:'sys', html:`<span class="err">GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}<br><span class="dim">레포 공개/브랜치/경로를 확인하세요. (owner=${esc(GH.owner)}, repo=${esc(GH.repo)}, branch=${esc(GH.branch)}, baseDir=${esc(GH.baseDir)})</span>` });
+      }
+    }
+
+    async function pickRandomQuoteFromCategory(category){
+      try{
+        const path = `${GH.baseDir}/${category}`;
+        const items = await listDir(path);
+        const files = items.filter(x => x.type === 'file' && /\.txt$/i.test(x.name));
+        if(!files.length) return `${category} 폴더에 .txt 파일이 없습니다.`;
+
+        const choice = files[Math.floor(Math.random() * files.length)];
+        const res = await fetch(choice.download_url, { cache: 'no-store' });
+        if(!res.ok) throw new Error(`raw ${res.status}`);
+        const text = (await res.text()).trim();
+
+        // 첫 줄만 보여주고 싶다면 ↓ 주석 해제
+        // return (text.split(/\r?\n/)[0] || '').trim() || '(빈 파일)';
+
+        return text || '(빈 파일)';
+      }catch(err){
+        return `글귀를 불러오는 중 오류가 발생했습니다: ${err.message}`;
+      }
+    }
+
+    // ===== UI 상태(스냅샷 복귀) =====
+    const uiState = {
+      mode: 'chat',           // 'chat' | 'reco'
+      snapshot: null,         // { logHTML, placeholder, input }
+      reco: null              // { category }
+    };
+
+    function categoriesText(){
+      const cats = CATS;
+      return cats.length ? `{ ${cats.map(c=>esc(c)).join(', ')} }` : '{ (레포에서 카테고리를 불러오는 중) }';
+    }
+
+    function enterRecommendationMode(category){
+      // 이전 화면 스냅샷 저장
+      uiState.snapshot = {
+        logHTML: log.innerHTML,
+        placeholder: inp.placeholder,
+        input: inp.value
+      };
+      uiState.mode = 'reco';
+
+      // 화면 초기화 후 안내
+      log.innerHTML = '';
+      pushLine({ role:'bot', html: `<b>${esc(category)}</b> 카테고리에서 이런 글귀를 추천해요.` });
+
+      // 비동기로 글귀 로드
+      (async () => {
+        const quote = await pickRandomQuoteFromCategory(category);
+        pushLine({ role:'bot', html: `“${esc(quote)}”` });
+      })();
+
+      // 입력 안내
+      inp.value = '';
+      inp.placeholder = '이전 화면으로 돌아가려면 back 입력...';
+      uiState.reco = { category };
+    }
+
+    function restoreFromRecommendation(){
+      if(!uiState.snapshot) return;
+      log.innerHTML     = uiState.snapshot.logHTML;
+      inp.placeholder   = uiState.snapshot.placeholder;
+      inp.value         = uiState.snapshot.input || '';
+      uiState.mode      = 'chat';
+      uiState.snapshot  = null;
+      uiState.reco      = null;
+      pushLine({ role:'bot', html: '이전 대화로 돌아왔어요.' });
+    }
 
     // ===== 유틸 =====
     function pushLine({role="bot", promptText=null, html=""}){
       const row = document.createElement('div');
       row.className = role === "sys" ? "line sys" : `line ${role}`;
       if(role === "sys"){
-        row.textContent = html;
+        row.innerHTML = html;            // ← HTML 렌더링 (중요)
       }else{
         const p = document.createElement('span');
         p.className = 'prompt';
@@ -139,7 +183,7 @@
       log.appendChild(row);
       log.scrollTop = log.scrollHeight;
     }
-    function esc(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+    function esc(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
     // ===== 명령들 =====
     function cmdHelp(){
@@ -149,46 +193,34 @@
           "<span class='dim'>사용법</span>",
           "<br>1) 시작: 이름을 입력하면 위 대화창의 사용자 프롬프트가 <b>이름@local:~$</b> 로 바뀝니다.",
           "<br>2) 입력창은 계속 <b>&gt;&gt; print(' ... ')</b> 형식을 유지합니다.",
-          "<br>3) <b>clear</b> 로 화면 지우기, <b>help</b> 로 도움말."
+          "<br>3) <b>clear</b> 로 화면 지우기, <b>help</b> 로 도움말.",
+          "<br>4) <b>카테고리 이름</b>을 입력하면 해당 카테고리에서 무작위 글귀를 보여줘요."
         ].join("")
       });
     }
 
-	// 처음 질문
+    // 초기 안내 + 카테고리 로딩
     pushLine({role:"bot", html:"성함이 어떻게 되시나요?"});
-	
+    loadCategories();
+
     // ===== 입력 처리 =====
     async function handleInputSubmit(){
       const text = inp.value.trim();
       if(!text) return;
       inp.value = "";
       pushLine({role:"user", html: esc(text)});
-		
-	  // (A) 추천 모드에서 'back' → 이전 대화 복귀
-	  if (uiState.mode === 'reco'){
-		if (text.toLowerCase() === 'back'){
-		  restoreFromRecommendation();
-		} else {
-		  pushLine({ role:'sys', html:'지금 화면에서는 <b>back</b>만 사용할 수 있어요.' });
-		}
-		return;
-	  }
 
-	  // (B) 카테고리 입력 모드 트리거: 사랑 / 우정
-	  if(/사랑|우정/i.test(text)){
-		const cat = text.trim();
-		enterRecommendationMode(cat);
-		return;
-	  }
+      // 추천 모드에서 back → 복귀
+      if (uiState.mode === 'reco'){
+        if (text.toLowerCase() === 'back'){
+          restoreFromRecommendation();
+        } else {
+          pushLine({ role:'sys', html:'지금 화면에서는 <b>back</b>만 사용할 수 있어요.' });
+        }
+        return;
+      }
 
-	  // (C) 추천 모드에서 일반 입력: 사용자가 추천 문구를 전송한 경우
-	  if(uiState.mode === 'reco'){
-		// 여기서는 전송만 하고 모드는 유지. 원하는 경우 자동으로 chat 복귀도 가능.
-		pushLine({ role:'bot', html: '좋아요! 이전 화면으로 돌아가려면 back을 입력해주세요.' });
-		return;
-	  }
-      
-	  // clear / help
+      // clear / help
       if(text.toLowerCase() === "clear"){
         log.innerHTML = "";
         pushLine({role:"bot", html:"화면을 지웠어요."});
@@ -201,28 +233,24 @@
       }
       if(text.toLowerCase() === "help"){ cmdHelp(); return; }
 
-      // 1) 이름 단계: 입력 그대로 이름으로 사용 (입력창 래핑은 계속 유지)
+      // 이름 입력 단계
       if(state.awaitingName){
-        const name = text;
-        state.name = name;
+        state.name = text;
         state.awaitingName = false;
-        inp.placeholder = "메시지를 입력하세요…";
-        pushLine({role:"bot", html:`반가워요, <span class="cyan">${esc(name)}</span>! ${esc(name)}님에게 맞는 글귀를 추천해 줄게요. <br>마음에 드는 카테고리가 있을까요?<br> {우정, 사랑\}</br>`});
+        inp.placeholder = `카테고리를 입력하세요… ${categoriesText()}`;
+        pushLine({role:"bot", html:`반가워요, <span class="cyan">${esc(state.name)}</span>! 레포에서 불러온 카테고리 중 하나를 입력해 보세요.\n${categoriesText()}`});
         return;
       }
-	  
-	  // 3) 카테고리 입력 모드
-      if(/사랑|우정/i.test(text)){
-		
-		return;
-	  }
+
+      // 입력이 카테고리 이름과 정확히 일치하면 추천 모드 진입
+      if (CATS.includes(text)){
+        enterRecommendationMode(text);
+        return;
+      }
 
       // 기본 에코
       pushLine({role:"bot", html:`"${esc(text)}" 라고 하셨네요.`});
     }
-	
-	
-
 
     // ===== 이벤트 =====
     inp.addEventListener('keydown', (e)=>{
@@ -231,16 +259,10 @@
         handleInputSubmit();
       }
     });
-    document.querySelectorAll('.chip').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        inp.value = ch.getAttribute('data-fill');
-        inp.focus();
-      });
-    });
 
     // 작은 강조 색
     const style = document.createElement('style');
-    style.textContent = `.cyan{ color: ${getComputedStyle(document.documentElement).getPropertyValue('--cyan') || '#0ea5e9'} }`;
+    style.textContent = `.cyan{ color: ${getComputedStyle(document.documentElement).getPropertyValue('--cyan') || '#06b6d4'} }`;
     document.head.appendChild(style);
   </script>
 </body>
