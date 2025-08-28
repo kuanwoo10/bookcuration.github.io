@@ -104,9 +104,6 @@
         if(!res.ok) throw new Error(`raw ${res.status}`);
         const text = (await res.text()).trim();
 
-        // 첫 줄만 보여주고 싶다면 ↓ 주석 해제
-        // return (text.split(/\r?\n/)[0] || '').trim() || '(빈 파일)';
-
         return text || '(빈 파일)';
       }catch(err){
         return `글귀를 불러오는 중 오류가 발생했습니다: ${err.message}`;
@@ -214,8 +211,6 @@
       if (uiState.mode === 'reco'){
         if (text.toLowerCase() === 'back'){
           restoreFromRecommendation();
-        } else {
-          pushLine({ role:'sys', html:'지금 화면에서는 <b>back</b>만 사용할 수 있어요.' });
         }
         return;
       }
