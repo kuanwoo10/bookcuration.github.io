@@ -94,7 +94,7 @@
         <span class="ps1" id="pre">&gt;&gt; print('</span>
         <input id="inp" type="text" autocomplete="off" placeholder="이름을 입력하세요" inputmode="text" />
         <span class="ps1" id="post">')</span>
-        <button class="send" id="sendBtn" aria-label="전송">⏎</button>
+        <button class="send" id="sendBtn" aria-label="전송">실행</button>
       </div>
     </div>
   </div>
@@ -156,9 +156,6 @@
         const items = await listDir(GH.baseDir);
         const dirs  = items.filter(x=>x.type==='dir');
         CATS = dirs.map(x=>x.name);
-        pushLine({ role:'sys', html: CATS.length
-          ? `레포에서 카테고리를 읽었습니다 → <b>${CATS.map(esc).join(', ')}</b>`
-          : `<span class='err'>카테고리 폴더가 비어있습니다.</span>` });
         renderCategoryChips();
       }catch(err){
         pushLine({ role:'sys', html:`<span class='err'>GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}` });
@@ -240,7 +237,7 @@
       inp.disabled = false;
       if(preEl)  preEl.style.opacity = '1';
       if(postEl) postEl.style.opacity = '1';
-      sendBtn.textContent = '⏎';
+      sendBtn.textContent = '실행';
       sendBtn.removeAttribute('data-action');
       pushLine({ role:'bot', html:'이전 대화로 돌아왔어요.' });
 
