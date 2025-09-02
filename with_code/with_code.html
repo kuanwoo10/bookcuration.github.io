@@ -6,149 +6,64 @@
   <title>터미널 챗</title>
   <style>
     :root{
-      /* 색상 & 여백 스케일 */
       --bg:#0b1020; --panel:#0f172a; --ink:#e5e7eb; --dim:#94a3b8; --green:#22c55e; --cyan:#06b6d4; --danger:#ef4444; --border:#1f2937;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --space: 12px; /* 모바일 기본 패딩 */
-      --radius: 12px;
-      --tap: 44px; /* 최소 터치 타깃 높이 */
+      --space: 12px; --radius: 12px; --tap: 44px;
     }
     *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
     html,body{ height:100%; margin:0; background:linear-gradient(180deg,#0a0f1e,#0d1530); }
     body{
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      color:var(--ink);
-      display:flex; align-items:center; justify-content:center;
-      touch-action: manipulation;
-      /* 모바일 가독성: 화면 크기에 따라 14~16px */
-      font-size: clamp(14px, 3.3vw, 16px);
-      line-height: 1.4;
+      color:var(--ink); display:flex; align-items:center; justify-content:center;
+      touch-action: manipulation; font-size: clamp(14px, 3.3vw, 16px); line-height: 1.4;
     }
-
-    /* 앱은 '안 흔들리는' 큰 뷰포트로 고정 */
-    .app{
-      position: relative;
-      width:min(920px, 100%);
-      height:100lvh;               /* 키보드 등장에도 레이아웃 유지 */
-      max-height: 820px;
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:14px;
-      box-shadow:0 18px 40px rgba(0,0,0,.35);
-      display:flex; flex-direction:column; overflow:hidden;
-    }
+    .app{ position:relative; width:min(920px,100%); height:100lvh; max-height:820px; background:var(--panel);
+      border:1px solid var(--border); border-radius:14px; box-shadow:0 18px 40px rgba(0,0,0,.35);
+      display:flex; flex-direction:column; overflow:hidden; }
     @supports not (height: 100lvh){ .app{ height:100vh; } }
 
-    /* 헤더: 모바일 콤팩트 */
-    .titlebar{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:8px 12px;
-      border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg,#111827,#0f172a);
-      min-height: var(--tap);
-    }
-    .dots{ display:flex; gap:6px }
-    .dot{ width:8px; height:8px; border-radius:50% }
-    .dot.red{ background:#ef4444 } .dot.yellow{ background:#f59e0b } .dot.green{ background:#22c55e }
+    .titlebar{ display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
+      border-bottom:1px solid var(--border); background:linear-gradient(180deg,#111827,#0f172a); min-height:var(--tap); }
+    .dots{ display:flex; gap:6px } .dot{ width:8px; height:8px; border-radius:50% }
+    .dot.red{background:#ef4444}.dot.yellow{background:#f59e0b}.dot.green{background:#22c55e}
     .title{ font-weight:800; letter-spacing:.3px; font-size: clamp(14px, 3.5vw, 16px); }
     .status{ font-size:12px; color:var(--dim) } .status .on{ color:var(--green) }
-    @media (max-width: 360px){ .status{ display:none } } /* 극소 화면에서 상태 숨김 */
+    @media (max-width:360px){ .status{ display:none } }
 
-    /* 카테고리 바: 가로 스크롤 & 큰 터치 영역 */
-    .cats{
-      display:flex; gap:8px; padding:8px 10px;
-      border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg,#0e1430,#0f172a);
-      overflow-x:auto; scrollbar-width:thin;
-      -webkit-overflow-scrolling: touch;
-    }
-    .cats::-webkit-scrollbar{ height:6px }
-    .cats::-webkit-scrollbar-thumb{ background:#1f2a44; border-radius:999px }
-    .cat-chip{
-      flex:0 0 auto; padding:8px 12px;
-      border:1px solid var(--border); border-radius:999px;
-      cursor:pointer; font-size:13px; color:var(--ink); background:#0b1224;
-      min-height: var(--tap);
-      display:flex; align-items:center;
-    }
-    .cat-chip:active{ transform:translateY(1px) }
-    .hidden{ display:none !important }
-
-    /* 로그: 줄바꿈 강화로 ‘뭉개짐’ 방지 */
-    .log{
-      position: relative;
-      flex:1; overflow-y:auto; padding:12px;
+    .log{ position:relative; flex:1; overflow-y:auto; padding:12px;
       background:repeating-linear-gradient(0deg,#0f172a,#0f172a 22px,#0e162d 22px,#0e162d 44px);
-      scroll-behavior:smooth; overscroll-behavior:contain;
-      padding-bottom:0; /* 입력바에 가려져도 OK(요청사항) */
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-	
+      scroll-behavior:smooth; overscroll-behavior:contain; padding-bottom:0; word-break:break-word; overflow-wrap:anywhere; }
     .line{ display:flex; gap:8px; margin:6px 0; white-space:pre-wrap; }
-	/* 글귀가 포함된 줄만 프롬프트/본문을 세로로 쌓기 */
-	.line.vstack{
-	  flex-direction: column;        /* 가로 → 세로 */
-	  align-items: flex-start;
-	}
-	.line.vstack .prompt{ margin-bottom: 2px; }
-	.line.vstack .out{ width: 100%; }
-
+    .line.vstack{ flex-direction:column; align-items:flex-start; }
+    .line.vstack .prompt{ margin-bottom:2px }
+    .line.vstack .out{ width:100% }
     .prompt{ color:var(--green); flex:0 0 auto }
-    .user .prompt::after{ content:"$" }
-    .bot  .prompt::after{ content:"#" }
+    .user .prompt::after{ content:"$" } .bot .prompt::after{ content:"#" }
     .sys{ justify-content:center; color:var(--dim); font-size:12px }
     .out{ color:var(--ink); flex:1; min-width:0 }
-    .dim{ color:var(--dim) }
-    .err{ color:var(--danger) }
+    .dim{ color:var(--dim) } .err{ color:var(--danger) }
 
-    /* 입력 바: 레이아웃에서 분리 → 이것만 움직임 */
-    .footer{
-      position:absolute; left:0; right:0; bottom:0; z-index:10;
-      transition: transform .18s ease;
-      padding: var(--space);
-      padding-bottom: calc(var(--space) + var(--safe-bottom));
-      background:linear-gradient(180deg, rgba(13,21,48,0), #0f172a 60%);
-      transform: translate3d(0,0,0); will-change: transform;
-    }
-    .bar{
-      display:flex; align-items:center; gap:8px; background:#0b1224;
-      border:1px solid var(--border); border-radius:var(--radius); padding:8px;
-      min-width:0; overflow:hidden; min-height: var(--tap);
-    }
+    .footer{ position:absolute; left:0; right:0; bottom:0; z-index:10; transition:transform .18s ease;
+      padding:var(--space); padding-bottom:calc(var(--space) + var(--safe-bottom));
+      background:linear-gradient(180deg, rgba(13,21,48,0), #0f172a 60%); transform:translate3d(0,0,0); will-change:transform; }
+    .cats{ display:flex; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:12px; margin-bottom:8px;
+      background:#0b1224; overflow-x:auto; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+    .cats.hidden{ display:none !important }
+    .cats::-webkit-scrollbar{ height:6px } .cats::-webkit-scrollbar-thumb{ background:#1f2a44; border-radius:999px }
+    .cat-chip{ flex:0 0 auto; padding:8px 12px; border:1px solid var(--border); border-radius:999px; cursor:pointer;
+      font-size:13px; color:var(--ink); background:#0b1224; min-height:var(--tap); display:flex; align-items:center; }
+    .cat-chip:active{ transform:translateY(1px) }
+
+    .bar{ display:flex; align-items:center; gap:8px; background:#0b1224; border:1px solid var(--border);
+      border-radius:var(--radius); padding:8px; min-width:0; overflow:hidden; min-height:var(--tap); }
     .ps1{ color:var(--green); user-select:none; display:inline; opacity:.9 }
-    /* 작은 화면에서는 print 프롬프트 감춤 → 공간 확보 */
-    .printwrap{ display:none; }
-    @media (min-width: 420px){ .printwrap{ display:inline; } }
-
-    input[type="text"]{
-      flex:1; min-width:0;
-      background:transparent; border:0; outline:none; color:var(--ink); font:inherit;
-      padding:6px 2px; line-height:1.4; font-size:16px;
-    }
-    .send{
-      flex:0 0 auto; appearance:none; border:0; background:#0b1224;
-      border-left:1px solid var(--border); padding:10px 14px; border-radius:10px;
-      cursor:pointer; color:var(--ink); font:inherit; min-height: var(--tap);
-    }
+    .printwrap{ display:none } @media (min-width:420px){ .printwrap{ display:inline } }
+    input[type="text"]{ flex:1; min-width:0; background:transparent; border:0; outline:none; color:var(--ink); font:inherit; padding:6px 2px; line-height:1.4; font-size:16px; }
+    .send{ flex:0 0 auto; appearance:none; border:0; background:#0b1224; border-left:1px solid var(--border); padding:10px 14px; border-radius:10px; cursor:pointer; color:var(--ink); font:inherit; min-height:var(--tap); }
     .send:active{ transform:translateY(1px) }
-
-    @media (min-width: 768px){
-      /* 태블릿 이상에서 여백 살짝 증가 */
-      .log{ padding:16px }
-      .bar{ padding:10px }
-    }
-    @media (max-width: 360px){
-      /* 초소형 기기 보정 */
-      .cat-chip{ padding:6px 10px; font-size:12px }
-      .bar{ gap:6px }
-      .send{ padding:10px 12px }
-    }
-
-    @media (prefers-reduced-motion: reduce){
-      .footer{ transition: none }
-      .cat-chip:active{ transform:none }
-    }
+    @media (min-width:768px){ .log{ padding:16px } .bar{ padding:10px } }
+    @media (max-width:360px){ .cat-chip{ padding:6px 10px; font-size:12px } .bar{ gap:6px } .send{ padding:10px 12px } }
+    @media (prefers-reduced-motion: reduce){ .footer{ transition:none } .cat-chip:active{ transform:none } }
   </style>
 </head>
 <body>
@@ -161,10 +76,10 @@
       <div class="status"><span class="on">●</span> connected</div>
     </div>
 
-    <div class="cats hidden" id="cats" aria-label="카테고리 바로가기"></div>
     <div id="log" class="log" aria-live="polite"></div>
 
     <div class="footer" id="footer">
+      <div class="cats hidden" id="cats" aria-label="카테고리 바로가기"></div>
       <div class="bar">
         <span class="ps1 printwrap" id="pre">&gt;&gt; print('</span>
         <input id="inp" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"
@@ -186,10 +101,9 @@
     const postEl  = document.getElementById('post');
 
     // ===== State =====
-    const state   = { name:null, awaitingName:true };
-    const uiState = { mode:'chat', snapshot:null, reco:null };
-    let   allowCatsVisible = false;
-    let   CATS = [];
+    const state = { name:null, awaitingName:true };
+    let allowCatsVisible = false;
+    let CATS = [];
 
     // ===== Repo Config =====
     const GH = { owner:'kuanwoo10', repo:'bookcuration.github.io', branch:'main', baseDir:'카테고리' };
@@ -198,7 +112,6 @@
     function esc(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
     function setCatsVisible(v){ catsEl.classList.toggle('hidden', !v); }
     function categoriesText(){ return CATS.length ? `{ ${CATS.map(esc).join(', ')} }` : '{ (불러오는 중) }'; }
-
     function pushLine({role="bot", promptText=null, html=""}){
       const row = document.createElement('div');
       row.className = role==='sys' ? 'line sys' : `line ${role}`;
@@ -226,7 +139,6 @@
       if(!res.ok) throw new Error(`GitHub API ${res.status}`);
       return await res.json();
     }
-
     async function loadCategories(){
       try{
         const items = await listDir(GH.baseDir);
@@ -240,20 +152,13 @@
         pushLine({ role:'sys', html:`<span class='err'>GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}` });
       }
     }
-
     function renderCategoryChips(){
       catsEl.innerHTML = '';
       CATS.forEach(cat=>{
         const b = document.createElement('button');
-        b.className = 'cat-chip';
-        b.type = 'button';
-        b.textContent = cat;
+        b.className = 'cat-chip'; b.type = 'button'; b.textContent = cat;
         // 클릭 시 입력창에만 채워 넣기 (자동 이동 X)
-        b.addEventListener('click', (e)=>{
-          e.preventDefault();
-          inp.value = cat;
-          inp.focus();
-        });
+        b.addEventListener('click', (e)=>{ e.preventDefault(); inp.value = cat; inp.focus(); });
         catsEl.appendChild(b);
       });
     }
@@ -273,61 +178,11 @@
       }
     }
 
-    // ===== Modes =====
-    async function enterRecommendationMode(category){
-      // 이전 상태 저장 (Back 복귀용)
-      uiState.snapshot = {
-        logHTML: log.innerHTML,
-        placeholder: inp.placeholder,
-        input: inp.value
-      };
-
-      uiState.mode = 'reco';
-      uiState.reco = { category };
-
-      // 카테고리 바 숨김
-      setCatsVisible(false);
-
-      // 안내 로그
+    // ===== Actions =====
+    async function showQuoteModal(category){
       pushLine({ role:'bot', html:`<b>${esc(category)}</b> 카테고리에서 글귀를 불러옵니다…` });
-
-      // 입력 비활성화 + Back 전용
-      inp.value = '';
-      inp.placeholder = '이전 화면으로 돌아가려면 Back 버튼을 누르세요.';
-      inp.disabled = true;
-      if(preEl)  preEl.style.opacity = '0.35';
-      if(postEl) postEl.style.opacity = '0.35';
-      sendBtn.textContent = 'Back';
-      sendBtn.setAttribute('data-action','back');
-
-      // 팝업으로 글귀 표시
-      try {
-        const quote = await pickRandomQuoteFromCategory(category);
-        window.openQuoteModal(quote, category);
-      } catch (e) {
-        window.openQuoteModal('문구를 불러오지 못했습니다.', category);
-      }
-    }
-
-    function restoreFromRecommendation(){
-      if(!uiState.snapshot) return;
-
-      log.innerHTML    = uiState.snapshot.logHTML;
-      inp.placeholder  = uiState.snapshot.placeholder;
-      inp.value        = uiState.snapshot.input || '';
-      uiState.mode     = 'chat';
-      uiState.snapshot = null;
-      uiState.reco     = null;
-
-      // 입력 재활성화
-      inp.disabled = false;
-      if(preEl)  preEl.style.opacity = '1';
-      if(postEl) postEl.style.opacity = '1';
-      sendBtn.textContent = '⏎';
-      sendBtn.removeAttribute('data-action');
-      pushLine({ role:'bot', html:'이전 대화로 돌아왔어요.' });
-
-      if(allowCatsVisible) setCatsVisible(true);
+      const quote = await pickRandomQuoteFromCategory(category);
+      window.openQuoteModal(quote, category);
     }
 
     // ===== Commands =====
@@ -342,23 +197,10 @@
     }
 
     async function submit(){
-      // reco 모드에서 Back만 허용
-      if(uiState.mode==='reco' && sendBtn.dataset.action==='back'){
-        restoreFromRecommendation();
-        return;
-      }
-
       const text = inp.value.trim();
       if(!text) return;
-
       inp.value = '';
       pushLine({ role:'user', html: esc(text) });
-
-      // reco 모드에서 임의 입력 → 안내만
-      if(uiState.mode==='reco'){
-        pushLine({ role:'sys', html:'지금 화면에서는 <b>Back</b>만 사용할 수 있어요.' });
-        return;
-      }
 
       // clear / help
       const low = text.toLowerCase();
@@ -376,19 +218,16 @@
 
       // 이름 단계
       if(state.awaitingName){
-        state.name = text;
-        state.awaitingName = false;
+        state.name = text; state.awaitingName = false;
         pushLine({ role:'bot', html:`반가워요, <span class="cyan">${esc(state.name)}</span>! 이런 카테고리를 추천해드릴게요.\n${categoriesText()}` });
         inp.placeholder = `카테고리를 입력하세요… ${categoriesText()}`;
-        // 다음 페이즈부터 카테고리바 표시
-        allowCatsVisible = true;
-        requestAnimationFrame(()=> setCatsVisible(true));
+        allowCatsVisible = true; requestAnimationFrame(()=> setCatsVisible(true));
         return;
       }
 
-      // 카테고리 정확 일치 시 추천 모드
+      // 카테고리 정확 일치 시 모달
       if(CATS.includes(text)){
-        await enterRecommendationMode(text);
+        await showQuoteModal(text);
         return;
       }
 
@@ -398,22 +237,16 @@
 
     // ===== Events =====
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); }});
-    sendBtn.addEventListener('click', ()=>{
-      if(uiState.mode==='reco' && sendBtn.dataset.action==='back'){ restoreFromRecommendation(); }
-      else { submit(); }
-    });
+    sendBtn.addEventListener('click', submit);
 
-    // ===== Keyboard Insets (모바일) - 입력 바만 올리기 =====
+    // ===== Keyboard Insets =====
     function updateKeyboardInsets(){
       if(!window.visualViewport) return;
       const vv = visualViewport;
       const bottomInset = Math.max(0,(window.innerHeight - vv.height - vv.offsetTop));
-      footer.style.transform = `translate3d(0,${-bottomInset}px,0)`; // 입력 바만 위로
+      footer.style.transform = `translate3d(0,${-bottomInset}px,0)`;
     }
-    function reserveFooterSpace(){
-      // 로그는 가려져도 OK → 하단 여백 없이 유지
-      log.style.paddingBottom = '0px';
-    }
+    function reserveFooterSpace(){ log.style.paddingBottom = '0px'; }
     if(window.visualViewport){
       visualViewport.addEventListener('resize', ()=>{ updateKeyboardInsets(); reserveFooterSpace(); });
       visualViewport.addEventListener('scroll', updateKeyboardInsets);
@@ -422,103 +255,99 @@
 
     // ===== Boot =====
     pushLine({ role:'bot', html:'성함이 어떻게 되시나요?' });
-    setCatsVisible(false);
-    updateKeyboardInsets();
-    reserveFooterSpace();
-    loadCategories();
-
-    // 테마 색 적용용 유틸 클래스
+    setCatsVisible(false); updateKeyboardInsets(); reserveFooterSpace(); loadCategories();
     const style = document.createElement('style');
     style.textContent = `.cyan{ color:${getComputedStyle(document.documentElement).getPropertyValue('--cyan')||'#06b6d4'} }`;
     document.head.appendChild(style);
+
+    // expose for modal next button
+    window.pickRandomQuoteFromCategory = pickRandomQuoteFromCategory;
   </script>
 
-<!-- ===== Quote Modal (Popup) ===== -->
-<style>
-#quoteModal{position:fixed; inset:0; display:none; z-index:9999; align-items:center; justify-content:center}
-#quoteModal.open{display:flex}
-#quoteModal .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(2px)}
-#quoteModal .sheet{position:relative; width:min(680px,92vw); max-height:86vh; background:#0b1224; border:1px solid var(--border, #1f2a44);
-  border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 18px 40px rgba(0,0,0,.45)}
-#quoteModal .head{display:flex; align-items:center; justify-content:space-between; gap:8px}
-#quoteModal .ttl{font-weight:800; letter-spacing:.2px}
-#quoteModal .body{overflow:auto; -webkit-overflow-scrolling:touch; padding:6px 2px; line-height:1.6}
-#quoteModal .q{font-size:clamp(16px,4.6vw,20px); white-space:pre-wrap}
-#quoteModal .foot{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px}
-#quoteModal .btn{appearance:none; border:1px solid var(--border, #1f2a44); background:#0f172a; color:var(--ink, #e5e7eb);
-  border-radius:12px; padding:12px 14px; min-height:48px; cursor:pointer; font:inherit}
-#quoteModal .btn.primary{background:#0b1224; border-color:#1f2a44}
-#quoteModal .btn.danger{background:#141824; border-color:#2a324a}
-</style>
+  <!-- ===== Quote Modal (Popup) ===== -->
+  <style>
+    #quoteModal{position:fixed; inset:0; display:none; z-index:9999; align-items:center; justify-content:center}
+    #quoteModal.open{display:flex}
+    #quoteModal .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(2px)}
+    #quoteModal .sheet{position:relative; width:min(680px,92vw); max-height:86vh; background:#0b1224; border:1px solid var(--border, #1f2a44);
+      border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 18px 40px rgba(0,0,0,.45)}
+    #quoteModal .head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    #quoteModal .ttl{font-weight:800; letter-spacing:.2px}
+    #quoteModal .body{overflow:auto; -webkit-overflow-scrolling:touch; padding:6px 2px; line-height:1.6}
+    #quoteModal .q{font-size:clamp(16px,4.6vw,20px); white-space:pre-wrap}
+    #quoteModal .foot{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px}
+    #quoteModal .btn{appearance:none; border:1px solid var(--border, #1f2a44); background:#0f172a; color:var(--ink, #e5e7eb);
+      border-radius:12px; padding:12px 14px; min-height:48px; cursor:pointer; font:inherit}
+    #quoteModal .btn.primary{background:#0b1224; border-color:#1f2a44}
+    #quoteModal .btn.danger{background:#141824; border-color:#2a324a}
+  </style>
 
-<div id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="qm-title" aria-describedby="qm-body">
-  <div class="backdrop" data-close="1"></div>
-  <div class="sheet">
-    <div class="head">
-      <div class="ttl" id="qm-title">추천 글귀</div>
-      <button class="btn danger" id="qm-close" aria-label="닫기">닫기 ✕</button>
-    </div>
-    <div class="body" id="qm-body">
-      <div class="q" id="qm-quote">로딩 중…</div>
-    </div>
-    <div class="foot">
-      <button class="btn" id="qm-copy">복사</button>
-      <button class="btn primary" id="qm-next">다른 글귀</button>
+  <div id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="qm-title" aria-describedby="qm-body">
+    <div class="backdrop" data-close="1"></div>
+    <div class="sheet">
+      <div class="head">
+        <div class="ttl" id="qm-title">추천 글귀</div>
+        <button class="btn danger" id="qm-close" aria-label="닫기">X</button>
+      </div>
+      <div class="body" id="qm-body">
+        <div class="q" id="qm-quote">로딩 중…</div>
+      </div>
+      <div class="foot">
+        <button class="btn" id="qm-copy">복사</button>
+        <button class="btn primary" id="qm-next">다른 글귀</button>
+      </div>
     </div>
   </div>
-</div>
 
+  <script>
+    // ===== Quote Modal Helpers =====
+    (function(){
+      if (window.__quote_modal_init__) return; // prevent double init
+      window.__quote_modal_init__ = true;
 
-<script>
-// ===== Quote Modal Helpers =====
-(function(){
-  if (window.__quote_modal_init__) return; // prevent double init
-  window.__quote_modal_init__ = true;
+      const qm = window.qm = {
+        root:  document.getElementById('quoteModal'),
+        title: document.getElementById('qm-title'),
+        quote: document.getElementById('qm-quote'),
+        btnClose: document.getElementById('qm-close'),
+        btnCopy:  document.getElementById('qm-copy'),
+        btnNext:  document.getElementById('qm-next'),
+        currentCategory: null,
+      };
 
-  const qm = window.qm = {
-    root:  document.getElementById('quoteModal'),
-    title: document.getElementById('qm-title'),
-    quote: document.getElementById('qm-quote'),
-    btnClose: document.getElementById('qm-close'),
-    btnCopy:  document.getElementById('qm-copy'),
-    btnNext:  document.getElementById('qm-next'),
-    currentCategory: null,
-  };
+      window.openQuoteModal = function(text, category){
+        qm.currentCategory = category || null;
+        if (qm.title) qm.title.textContent = category ? (category + ' · 추천 글귀') : '추천 글귀';
+        if (qm.quote) qm.quote.textContent = text || '';
+        if (qm.root) qm.root.classList.add('open');
+        try{ document.body.style.overflow = 'hidden'; }catch(_){}
+        try{ qm.btnClose && qm.btnClose.focus(); }catch(_){}
+      };
+      window.closeQuoteModal = function(){
+        if (qm.root) qm.root.classList.remove('open');
+        try{ document.body.style.overflow = ''; }catch(_){}
+      };
 
-  window.openQuoteModal = function(text, category){
-    qm.currentCategory = category || null;
-    if (qm.title) qm.title.textContent = category ? (category + ' · 추천 글귀') : '추천 글귀';
-    if (qm.quote) qm.quote.textContent = text || '';
-    if (qm.root) qm.root.classList.add('open');
-    try{ document.body.style.overflow = 'hidden'; }catch(_){}
-    try{ qm.btnClose && qm.btnClose.focus(); }catch(_){}
-  };
-  window.closeQuoteModal = function(){
-    if (qm.root) qm.root.classList.remove('open');
-    try{ document.body.style.overflow = ''; }catch(_){}
-  };
-
-  qm && qm.btnClose && qm.btnClose.addEventListener('click', window.closeQuoteModal);
-  qm && qm.root && qm.root.addEventListener('click', (e)=>{ if(e.target && e.target.dataset && e.target.dataset.close) window.closeQuoteModal(); });
-  qm && qm.btnCopy && qm.btnCopy.addEventListener('click', async ()=>{
-    try{
-      await navigator.clipboard.writeText(qm.quote?.textContent || '');
-      const t = qm.btnCopy.textContent; qm.btnCopy.textContent = '복사됨!';
-      setTimeout(()=> qm.btnCopy.textContent = t, 900);
-    }catch(_){ }
-  });
-  qm && qm.btnNext && qm.btnNext.addEventListener('click', async ()=>{
-    try{
-      if(!qm.currentCategory) return;
-      qm.btnNext.disabled = true;
-      const q = await (window.pickRandomQuoteFromCategory?.(qm.currentCategory));
-      if(qm.quote) qm.quote.textContent = q || '';
-    }finally{
-      qm.btnNext.disabled = false;
-    }
-  });
-})();
-</script>
-
+      qm && qm.btnClose && qm.btnClose.addEventListener('click', window.closeQuoteModal);
+      qm && qm.root && qm.root.addEventListener('click', (e)=>{ if(e.target && e.target.dataset && e.target.dataset.close) window.closeQuoteModal(); });
+      qm && qm.btnCopy && qm.btnCopy.addEventListener('click', async ()=>{
+        try{
+          await navigator.clipboard.writeText(qm.quote?.textContent || '');
+          const t = qm.btnCopy.textContent; qm.btnCopy.textContent = '복사됨!';
+          setTimeout(()=> qm.btnCopy.textContent = t, 900);
+        }catch(_){ }
+      });
+      qm && qm.btnNext && qm.btnNext.addEventListener('click', async ()=>{
+        try{
+          if(!qm.currentCategory) return;
+          qm.btnNext.disabled = true;
+          const q = await (window.pickRandomQuoteFromCategory?.(qm.currentCategory));
+          if(qm.quote) qm.quote.textContent = q || '';
+        }finally{
+          qm.btnNext.disabled = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
