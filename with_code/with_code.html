@@ -128,7 +128,7 @@
       }else{
         const p = document.createElement('span');
         p.className = 'prompt';
-        const defaultPrompt = role==='user' ? (state.name?`${state.name}@local:~`:'guest@local:~') : 'term@host:~';
+        const defaultPrompt = role==='user' ? (state.name?`${state.name}:`:'guest:') : '도서관:';
         p.textContent = promptText ?? defaultPrompt;
         const body = document.createElement('div');
         body.className = 'out';
@@ -152,9 +152,6 @@
         const items = await listDir(GH.baseDir);
         const dirs  = items.filter(x=>x.type==='dir');
         CATS = dirs.map(x=>x.name);
-        pushLine({ role:'sys', html: CATS.length
-          ? `레포에서 카테고리를 읽었습니다 → <b>${CATS.map(esc).join(', ')}</b>`
-          : `<span class='err'>카테고리 폴더가 비어있습니다.</span>` });
         renderCategoryChips();
       }catch(err){
         pushLine({ role:'sys', html:`<span class='err'>GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}` });
@@ -388,3 +385,4 @@
   </script>
 </body>
 </html>
+
