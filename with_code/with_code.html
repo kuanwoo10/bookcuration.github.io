@@ -257,20 +257,30 @@
     }
     function applyFooterTransform(bottomInsetPx){
       const inset = Math.max(0, bottomInsetPx|0);
-      // footer만 키보드 인셋만큼 올림 (log는 덮여도 OK)
+      // footer만 키보드 인셋만큼 올림
       footer.style.transform = `translate3d(0,${-inset}px,0)`;
-      // 로그는 항상 footer 높이만큼만 패딩 확보 (인셋은 반영하지 않음)
+      // log는 인셋은 반영하지 않고, footer 자체 높이만큼만 패딩
       log.style.paddingBottom = `${currentFooterHeight()}px`;
-    }px,0)`;
-      // 입력창이 겹치지 않도록 log 아래 패딩을 footer 높이 + 인셋으로 확보
-      log.style.paddingBottom = `${inset + currentFooterHeight()}px`;
     }
+
     function computeBottomInset(){
       if(!window.visualViewport) return 0;
       const vv = visualViewport;
-      const inset = (window.innerHeight - vv.height - vv.offsetTop);
-      return Math.max(0, Math.round(inset));
+      const ih = window.innerHeight;
+    
+      // 기본: 레이아웃 뷰포트와 비주얼 뷰포트 차이
+      let inset = Math.max(0, Math.round(ih - vv.height));
+    
+      // iOS Safari 보정: offsetTop이 있을 수 있음(주소창/툴바 상태)
+      inset = Math.max(inset, Math.round(ih - (vv.height + vv.offsetTop)));
+    
+      // 과도한/NaN 값 방지
+      if(inset < 0 || !isFinite(inset)) inset = 0;
+      if(inset > 600) inset = 600;
+    
+      return inset;
     }
+
     function updateKeyboardInsets(){ applyFooterTransform(computeBottomInset()); }
     function reserveFooterSpace(){ log.style.paddingBottom = `${currentFooterHeight()}px`; }
     function ensureInputVisible(){ try{ setTimeout(()=> inp.scrollIntoView({block:'center', behavior:'smooth'}), 0); }catch(_){} }
@@ -392,3 +402,4 @@
   </script>
 </body>
 </html>
+
