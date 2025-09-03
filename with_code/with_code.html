@@ -4,6 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>터미널 챗</title>
+  
+  <!-- (선택) 모달 본문에 사용할 나눔고딕 웹폰트 로드 -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap">
+
   <style>
     :root{
       --bg:#0b1020; --panel:#0f172a; --ink:#e5e7eb; --dim:#94a3b8; --green:#22c55e; --cyan:#06b6d4; --danger:#ef4444; --border:#1f2937;
@@ -20,6 +25,9 @@
     .app{ position:relative; width:min(920px,100%); height:100lvh; max-height:820px; background:var(--panel);
       border:1px solid var(--border); border-radius:14px; box-shadow:0 18px 40px rgba(0,0,0,.35);
       display:flex; flex-direction:column; overflow:hidden; }
+    /* dvh 지원 시 우선 사용 */
+    @supports (height: 100dvh){ .app{ height:100dvh; } }
+    /* lvh 미지원 브라우저 폴백 */
     @supports not (height: 100lvh){ .app{ height:100vh; } }
 
     .titlebar{ display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
@@ -144,9 +152,6 @@
         const items = await listDir(GH.baseDir);
         const dirs  = items.filter(x=>x.type==='dir');
         CATS = dirs.map(x=>x.name);
-        pushLine({ role:'sys', html: CATS.length
-          ? `레포에서 카테고리를 읽었습니다 → <b>${CATS.map(esc).join(', ')}</b>`
-          : `<span class='err'>카테고리 폴더가 비어있습니다.</span>` });
         renderCategoryChips();
       }catch(err){
         pushLine({ role:'sys', html:`<span class='err'>GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}` });
@@ -212,9 +217,10 @@
           inp.placeholder = '이름을 입력하세요';
           state.awaitingName = true;
         }
+        try{ inp.blur(); }catch(_){}
         return;
       }
-      if(low==='help'){ cmdHelp(); return; }
+      if(low==='help'){ cmdHelp(); try{ inp.blur(); }catch(_){} return; }
 
       // 이름 단계
       if(state.awaitingName){
@@ -222,36 +228,55 @@
         pushLine({ role:'bot', html:`반가워요, <span class="cyan">${esc(state.name)}</span>! 이런 카테고리를 추천해드릴게요.\n${categoriesText()}` });
         inp.placeholder = `카테고리를 입력하세요… ${categoriesText()}`;
         allowCatsVisible = true; requestAnimationFrame(()=> setCatsVisible(true));
+        try{ inp.blur(); }catch(_){}
         return;
       }
 
       // 카테고리 정확 일치 시 모달
       if(CATS.includes(text)){
         await showQuoteModal(text);
+        try{ inp.blur(); }catch(_){}
         return;
       }
 
       // 기본 에코
       pushLine({ role:'bot', html:`\"${esc(text)}\" 라고 하셨네요.` });
+      try{ inp.blur(); }catch(_){}
     }
 
     // ===== Events =====
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); }});
     sendBtn.addEventListener('click', submit);
 
-    // ===== Keyboard Insets =====
-    function updateKeyboardInsets(){
-      if(!window.visualViewport) return;
+    // ===== Keyboard Insets (모바일 키보드 대응) =====
+    function currentFooterHeight(){
+      return footer ? footer.getBoundingClientRect().height : 0;
+    }
+    function applyFooterTransform(bottomInsetPx){
+      const inset = Math.max(0, bottomInsetPx|0);
+      footer.style.transform = `translate3d(0,${-inset}px,0)`;
+      // 입력창이 겹치지 않도록 log 아래 패딩을 footer 높이 + 인셋으로 확보
+      log.style.paddingBottom = `${inset + currentFooterHeight()}px`;
+    }
+    function computeBottomInset(){
+      if(!window.visualViewport) return 0;
       const vv = visualViewport;
-      const bottomInset = Math.max(0,(window.innerHeight - vv.height - vv.offsetTop));
-      footer.style.transform = `translate3d(0,${-bottomInset}px,0)`;
+      const inset = (window.innerHeight - vv.height - vv.offsetTop);
+      return Math.max(0, Math.round(inset));
     }
-    function reserveFooterSpace(){ log.style.paddingBottom = '0px'; }
+    function updateKeyboardInsets(){ applyFooterTransform(computeBottomInset()); }
+    function reserveFooterSpace(){ log.style.paddingBottom = `${currentFooterHeight()}px`; }
+    function ensureInputVisible(){ try{ setTimeout(()=> inp.scrollIntoView({block:'center', behavior:'smooth'}), 0); }catch(_){} }
+
     if(window.visualViewport){
-      visualViewport.addEventListener('resize', ()=>{ updateKeyboardInsets(); reserveFooterSpace(); });
-      visualViewport.addEventListener('scroll', updateKeyboardInsets);
+      visualViewport.addEventListener('resize', ()=>{ updateKeyboardInsets(); });
+      visualViewport.addEventListener('scroll',  ()=>{ updateKeyboardInsets(); });
     }
-    window.addEventListener('resize', reserveFooterSpace);
+    window.addEventListener('resize', ()=>{ reserveFooterSpace(); updateKeyboardInsets(); });
+    window.addEventListener('orientationchange', ()=>{ reserveFooterSpace(); updateKeyboardInsets(); });
+
+    inp.addEventListener('focus', ()=>{ ensureInputVisible(); });
+    inp.addEventListener('blur',  ()=>{ updateKeyboardInsets(); });
 
     // ===== Boot =====
     pushLine({ role:'bot', html:'성함이 어떻게 되시나요?' });
@@ -270,11 +295,11 @@
     #quoteModal.open{display:flex}
     #quoteModal .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(2px)}
     #quoteModal .sheet{position:relative; width:min(680px,92vw); max-height:86vh; background:#0b1224; border:1px solid var(--border, #1f2a44);
-      border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 18px 40px rgba(0,0,0,.45)}
+      border-radius:16px; padding:16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:12px; box-shadow:0 18px 40px rgba(0,0,0,.45)}
     #quoteModal .head{display:flex; align-items:center; justify-content:space-between; gap:8px}
     #quoteModal .ttl{font-weight:800; letter-spacing:.2px}
     #quoteModal .body{overflow:auto; -webkit-overflow-scrolling:touch; padding:6px 2px; line-height:1.6}
-    #quoteModal .q{font-size:clamp(16px,4.6vw,20px); white-space:pre-wrap; color: #FFFFF0; font-family: 'Nanum Gothic', sans-serif;}
+    #quoteModal .q{font-size:clamp(16px,4.6vw,20px); white-space:pre-wrap; color: #FFFFF0; font-family: 'Nanum Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;}
     #quoteModal .foot{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px}
     #quoteModal .btn{appearance:none; border:1px solid var(--border, #1f2a44); background:#0f172a; color:var(--ink, #e5e7eb);
       border-radius:12px; padding:12px 14px; min-height:48px; cursor:pointer; font:inherit}
@@ -320,12 +345,14 @@
         if (qm.title) qm.title.textContent = category ? (category + ' · 추천 글귀') : '추천 글귀';
         if (qm.quote) qm.quote.textContent = text || '';
         if (qm.root) qm.root.classList.add('open');
-        try{ document.body.style.overflow = 'hidden'; }catch(_){}
-        try{ qm.btnClose && qm.btnClose.focus(); }catch(_){}
+        try{ document.body.style.overflow = 'hidden'; }catch(_){ }
+        try{ qm.btnClose && qm.btnClose.focus(); }catch(_){ }
+        // 모달 오픈 시 키보드가 떠있다면 닫기
+        try{ inp.blur(); }catch(_){ }
       };
       window.closeQuoteModal = function(){
         if (qm.root) qm.root.classList.remove('open');
-        try{ document.body.style.overflow = ''; }catch(_){}
+        try{ document.body.style.overflow = ''; }catch(_){ }
       };
 
       qm && qm.btnClose && qm.btnClose.addEventListener('click', window.closeQuoteModal);
@@ -345,6 +372,13 @@
           if(qm.quote) qm.quote.textContent = q || '';
         }finally{
           qm.btnNext.disabled = false;
+        }
+      });
+
+      // Esc로 닫기
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape' && qm.root && qm.root.classList.contains('open')){
+          window.closeQuoteModal();
         }
       });
     })();
