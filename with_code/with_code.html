@@ -26,7 +26,7 @@
       border:1px solid var(--border); border-radius:14px; box-shadow:0 18px 40px rgba(0,0,0,.35);
       display:flex; flex-direction:column; overflow:hidden; }
     /* dvh 지원 시 우선 사용 */
-    @supports (height: 100dvh){ .app{ height:100dvh; } }
+    @supports (height: 100svh){ .app{ height:100svh; } }
     /* lvh 미지원 브라우저 폴백 */
     @supports not (height: 100lvh){ .app{ height:100vh; } }
 
@@ -152,6 +152,9 @@
         const items = await listDir(GH.baseDir);
         const dirs  = items.filter(x=>x.type==='dir');
         CATS = dirs.map(x=>x.name);
+        pushLine({ role:'sys', html: CATS.length
+          ? `레포에서 카테고리를 읽었습니다 → <b>${CATS.map(esc).join(', ')}</b>`
+          : `<span class='err'>카테고리 폴더가 비어있습니다.</span>` });
         renderCategoryChips();
       }catch(err){
         pushLine({ role:'sys', html:`<span class='err'>GitHub에서 카테고리 목록을 불러오지 못했습니다:</span> ${esc(err.message)}` });
@@ -254,7 +257,11 @@
     }
     function applyFooterTransform(bottomInsetPx){
       const inset = Math.max(0, bottomInsetPx|0);
+      // footer만 키보드 인셋만큼 올림 (log는 덮여도 OK)
       footer.style.transform = `translate3d(0,${-inset}px,0)`;
+      // 로그는 항상 footer 높이만큼만 패딩 확보 (인셋은 반영하지 않음)
+      log.style.paddingBottom = `${currentFooterHeight()}px`;
+    }px,0)`;
       // 입력창이 겹치지 않도록 log 아래 패딩을 footer 높이 + 인셋으로 확보
       log.style.paddingBottom = `${inset + currentFooterHeight()}px`;
     }
