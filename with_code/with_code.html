@@ -280,7 +280,7 @@
     inp.addEventListener('blur',  ()=>{ updateKeyboardInsets(); });
 
     // ===== Boot =====
-    pushLine({ role:'bot', html:'안녕하세요. 국립창원대학교 도사관입니다.\n성함이 어떻게 되시나요?' });
+    pushLine({ role:'bot', html:'안녕하세요. 국립창원대학교 도서관입니다.\n성함이 어떻게 되시나요?' });
     setCatsVisible(false); updateKeyboardInsets(); reserveFooterSpace(); loadCategories();
     const style = document.createElement('style');
     style.textContent = `.cyan{ color:${getComputedStyle(document.documentElement).getPropertyValue('--cyan')||'#06b6d4'} }`;
