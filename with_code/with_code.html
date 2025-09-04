@@ -185,7 +185,7 @@
 
     // ===== Actions =====
     async function showQuoteModal(category){
-      pushLine({ role:'bot', html:`<b>${esc(category)}</b> 카테고리에서 글귀를 불러옵니다…` });
+      pushLine({ role:'bot', html:`<b>${esc(category)}</b> 책 속의 텍스트가 마음에 드셨다면, 북큐레이션 참여이벤트로 텍스트 문장을 공유해주세요!` });
       const quote = await pickRandomQuoteFromCategory(category);
       window.openQuoteModal(quote, category);
     }
@@ -225,7 +225,8 @@
       // 이름 단계
       if(state.awaitingName){
         state.name = text; state.awaitingName = false;
-        pushLine({ role:'bot', html:`반가워요, <span class="cyan">${esc(state.name)}</span>! 이런 카테고리를 추천해드릴게요.\n${categoriesText()}` });
+        pushLine({ role:'bot', html:`<span class="cyan">${esc(state.name)}</span>님, 만나서 반가워요!`});
+		pushLine({ role:'bot', html:`<span class="cyan">${esc(state.name)}</span>님, 오늘 하루만큼은 "Forget Book, Fall in Text!"\n텍스트가 주는 인사이트, 응원의 힘, 사랑에 빠져보시는 건 어떠세요?\n마음에 드는 카테고리를 입력하시면 책 속의 텍스트를 꺼내 드릴게요.`});
         inp.placeholder = `카테고리를 입력하세요… ${categoriesText()}`;
         allowCatsVisible = true; requestAnimationFrame(()=> setCatsVisible(true));
         try{ inp.blur(); }catch(_){}
@@ -240,7 +241,7 @@
       }
 
       // 기본 에코
-      pushLine({ role:'bot', html:`\"${esc(text)}\" 라고 하셨네요.` });
+      pushLine({ role:'bot', html:`\"${esc(text)}\" 라고 하셨네요. 카테고리명을 동일하게 입력해주세요.` });
       try{ inp.blur(); }catch(_){}
     }
 
@@ -279,7 +280,7 @@
     inp.addEventListener('blur',  ()=>{ updateKeyboardInsets(); });
 
     // ===== Boot =====
-    pushLine({ role:'bot', html:'성함이 어떻게 되시나요?' });
+    pushLine({ role:'bot', html:'안녕하세요. 국립창원대학교 도사관입니다.\n성함이 어떻게 되시나요?' });
     setCatsVisible(false); updateKeyboardInsets(); reserveFooterSpace(); loadCategories();
     const style = document.createElement('style');
     style.textContent = `.cyan{ color:${getComputedStyle(document.documentElement).getPropertyValue('--cyan')||'#06b6d4'} }`;
